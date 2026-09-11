@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutGrid, BarChart3, ListOrdered, Settings, Plus, WalletCards } from 'lucide-react'
+import { LayoutGrid, BarChart3, ListOrdered, Settings, Plus, WalletCards, TriangleAlert, X } from 'lucide-react'
+import { useWallet } from '@/lib/store'
 import { cx } from '../ui'
 
 const NAV_ITEMS = [
@@ -13,14 +14,14 @@ const NAV_ITEMS = [
 export function AppShell() {
   return (
     <div className="min-h-dvh md:flex">
-      <aside className="hidden w-60 shrink-0 border-r-3 border-ink bg-paper md:flex md:flex-col">
+      <aside className="hidden w-60 shrink-0 border-r-3 border-ink bg-paper md:sticky md:top-0 md:flex md:h-dvh md:flex-col">
         <div className="flex items-center gap-2 border-b-3 border-ink px-5 py-5">
           <div className="flex h-9 w-9 items-center justify-center rounded border-3 bg-volt shadow-brut-sm">
             <WalletCards className="h-5 w-5 text-ink" strokeWidth={2.5} />
           </div>
           <span className="font-display text-xl font-bold">Ledger</span>
         </div>
-        <nav className="flex flex-1 flex-col gap-2 p-4">
+        <nav className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
           {NAV_ITEMS.filter((i) => !i.isAction).map((item) => (
             <SideLink key={item.to} {...item} />
           ))}
@@ -43,6 +44,7 @@ export function AppShell() {
       </aside>
 
       <div className="flex min-h-dvh flex-1 flex-col">
+        <ErrorBanner />
         <main className="flex-1 pb-24 md:pb-8">
           <div className="mx-auto w-full max-w-4xl px-4 py-5 md:px-8 md:py-8">
             <Outlet />
@@ -70,6 +72,28 @@ export function AppShell() {
           )}
         </div>
       </nav>
+    </div>
+  )
+}
+
+function ErrorBanner() {
+  const error = useWallet((s) => s.error)
+  const clearError = useWallet((s) => s.clearError)
+
+  if (!error) return null
+
+  return (
+    <div className="sticky top-0 z-20 flex items-center gap-2 border-b-3 border-ink bg-alert px-4 py-2.5 text-paper">
+      <TriangleAlert className="h-4 w-4 shrink-0" strokeWidth={2.5} />
+      <p className="flex-1 text-sm font-bold">{error}</p>
+      <button
+        type="button"
+        aria-label="Dismiss error"
+        onClick={clearError}
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded border-2 border-paper/60 hover:border-paper"
+      >
+        <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+      </button>
     </div>
   )
 }

@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronRight, CloudOff, Download, Repeat, Target, Wallet } from 'lucide-react'
+import { ChevronRight, Download, LogOut, Repeat, Target, User, Wallet } from 'lucide-react'
 import { useWallet } from '@/lib/store'
+import { useAuth } from '@/lib/authStore'
+import { apiErrorMessage } from '@/lib/api'
 import { money } from '@/lib/format'
 import { downloadCSV, expensesToCSV } from '@/lib/csv'
 import { Button, Card, Field, Input } from '@/components/ui'
@@ -10,17 +12,35 @@ export default function SettingsPage() {
   const income = useWallet((s) => s.settings.monthlyIncome)
   const setIncome = useWallet((s) => s.setIncome)
   const expenses = useWallet((s) => s.expenses)
+  const user = useAuth((s) => s.user)
+  const logout = useAuth((s) => s.logout)
 
   const [incomeInput, setIncomeInput] = useState(String(income))
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [loggingOut, setLoggingOut] = useState(false)
 
-  function handleSaveIncome(e: React.FormEvent) {
+  async function handleSaveIncome(e: React.FormEvent) {
     e.preventDefault()
     const amount = Number(incomeInput)
     if (!amount || amount <= 0) return
-    setIncome(amount)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 1500)
+    setSaving(true)
+    setError('')
+    try {
+      await setIncome(amount)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 1500)
+    } catch (e) {
+      setError(apiErrorMessage(e))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleLogout() {
+    setLoggingOut(true)
+    await logout()
   }
 
   return (
@@ -42,8 +62,11 @@ export default function SettingsPage() {
               onChange={(e) => setIncomeInput(e.target.value.replace(/[^0-9.]/g, ''))}
             />
           </Field>
-          <Button type="submit">{saved ? 'Saved!' : 'Save'}</Button>
+          <Button type="submit" disabled={saving}>
+            {saving ? 'Saving…' : saved ? 'Saved!' : 'Save'}
+          </Button>
         </form>
+        {error && <p className="mt-2 text-sm font-bold text-alert">{error}</p>}
         <p className="mt-2 text-sm text-ink/50">Currently {money(income)} per month.</p>
       </Card>
 
@@ -71,15 +94,21 @@ export default function SettingsPage() {
         </Button>
       </Card>
 
-      <Card padding="md" className="flex items-start gap-3">
-        <CloudOff className="mt-0.5 h-5 w-5 shrink-0 text-ink/40" strokeWidth={2.5} />
-        <div>
-          <p className="font-display font-bold">Stored on this device</p>
-          <p className="mt-1 text-sm text-ink/55">
-            Everything here lives in this browser’s local storage, so it stays fast and works
-            offline. Add a small backend later to sync across your phone and laptop.
-          </p>
+      <Card padding="md">
+        <div className="mb-3 flex items-center gap-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded border-3 bg-canvas">
+            <User className="h-4 w-4 text-ink" strokeWidth={2.5} />
+          </div>
+          <h2 className="font-display text-lg font-bold">Account</h2>
         </div>
+        <p className="mb-3 text-sm text-ink/55">
+          Signed in as <span className="font-bold text-ink">{user?.email}</span>. Your data is
+          tied to this account, so it stays with you across every device you log into.
+        </p>
+        <Button variant="ghost" onClick={handleLogout} disabled={loggingOut}>
+          <LogOut className="mr-1.5 h-4 w-4" strokeWidth={2.5} />
+          {loggingOut ? 'Signing out…' : 'Sign out'}
+        </Button>
       </Card>
     </div>
   )

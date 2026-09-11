@@ -7,6 +7,7 @@ import { budgetProgress } from '@/lib/analytics'
 import { CATEGORIES, getCategory } from '@/lib/categories'
 import { CategoryIcon } from '@/lib/icons'
 import { money, pct } from '@/lib/format'
+import { apiErrorMessage } from '@/lib/api'
 import { Button, Card, ConfirmDeleteButton, EmptyState, Field, Input, ProgressBar, Select } from '@/components/ui'
 import { MonthSwitcher } from '@/components/MonthSwitcher'
 import type { CategoryId } from '@/lib/types'
@@ -35,27 +36,48 @@ export default function Budgets() {
   const [goalName, setGoalName] = useState('')
   const [goalTarget, setGoalTarget] = useState('')
 
+  const [budgetError, setBudgetError] = useState('')
+  const [goalError, setGoalError] = useState('')
+  const [savingBudget, setSavingBudget] = useState(false)
+  const [savingGoal, setSavingGoal] = useState(false)
+
   const availableCategories = CATEGORIES.filter(
     (c) => !budgets.some((b) => b.category === c.id),
   )
 
-  function handleAddBudget(e: React.FormEvent) {
+  async function handleAddBudget(e: React.FormEvent) {
     e.preventDefault()
     const amount = Number(newBudgetAmount)
     if (!amount || amount <= 0) return
-    setBudget({ category: newBudgetCategory, amount })
-    setNewBudgetAmount('')
-    setShowBudgetForm(false)
+    setSavingBudget(true)
+    setBudgetError('')
+    try {
+      await setBudget({ category: newBudgetCategory, amount })
+      setNewBudgetAmount('')
+      setShowBudgetForm(false)
+    } catch (e) {
+      setBudgetError(apiErrorMessage(e))
+    } finally {
+      setSavingBudget(false)
+    }
   }
 
-  function handleAddGoal(e: React.FormEvent) {
+  async function handleAddGoal(e: React.FormEvent) {
     e.preventDefault()
     const target = Number(goalTarget)
     if (!goalName.trim() || !target || target <= 0) return
-    addSavingsGoal({ name: goalName, target, current: 0 })
-    setGoalName('')
-    setGoalTarget('')
-    setShowGoalForm(false)
+    setSavingGoal(true)
+    setGoalError('')
+    try {
+      await addSavingsGoal({ name: goalName, target, current: 0 })
+      setGoalName('')
+      setGoalTarget('')
+      setShowGoalForm(false)
+    } catch (e) {
+      setGoalError(apiErrorMessage(e))
+    } finally {
+      setSavingGoal(false)
+    }
   }
 
   return (
@@ -112,11 +134,12 @@ export default function Budgets() {
                   />
                 </Field>
               </div>
+              {budgetError && <p className="text-sm font-bold text-alert">{budgetError}</p>}
               <div className="flex gap-2">
-                <Button type="submit" className="flex-1">
-                  Save budget
+                <Button type="submit" className="flex-1" disabled={savingBudget}>
+                  {savingBudget ? 'Saving…' : 'Save budget'}
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => setShowBudgetForm(false)}>
+                <Button type="button" variant="secondary" onClick={() => setShowBudgetForm(false)} disabled={savingBudget}>
                   Cancel
                 </Button>
               </div>
@@ -176,11 +199,12 @@ export default function Budgets() {
                   />
                 </Field>
               </div>
+              {goalError && <p className="text-sm font-bold text-alert">{goalError}</p>}
               <div className="flex gap-2">
-                <Button type="submit" className="flex-1">
-                  Create goal
+                <Button type="submit" className="flex-1" disabled={savingGoal}>
+                  {savingGoal ? 'Creating…' : 'Create goal'}
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => setShowGoalForm(false)}>
+                <Button type="button" variant="secondary" onClick={() => setShowGoalForm(false)} disabled={savingGoal}>
                   Cancel
                 </Button>
               </div>

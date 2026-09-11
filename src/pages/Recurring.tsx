@@ -7,6 +7,7 @@ import { CategoryIcon } from '@/lib/icons'
 import { recurringMonthlyTotal } from '@/lib/analytics'
 import { money } from '@/lib/format'
 import type { CategoryId, PaymentMethod, RecurringExpense } from '@/lib/types'
+import { apiErrorMessage } from '@/lib/api'
 import { Button, Card, ConfirmDeleteButton, EmptyState, Field, Input, Select, cx } from '@/components/ui'
 
 const PAYMENT_METHODS: { id: PaymentMethod; label: string }[] = [
@@ -131,16 +132,11 @@ function Switch({
       aria-label={label}
       onClick={onChange}
       className={cx(
-        'relative h-6 w-11 shrink-0 rounded-full border-2 transition-colors',
-        checked ? 'bg-cash' : 'bg-canvas',
+        'flex h-6 w-11 shrink-0 items-center rounded-full border-2 p-0.5 transition-colors',
+        checked ? 'justify-end bg-cash' : 'justify-start bg-canvas',
       )}
     >
-      <span
-        className={cx(
-          'absolute top-0.5 h-4 w-4 rounded-full border-2 border-ink bg-paper transition-transform',
-          checked ? 'translate-x-[22px]' : 'translate-x-0.5',
-        )}
-      />
+      <span className="h-4 w-4 rounded-full border-2 border-ink bg-paper" />
     </button>
   )
 }
@@ -160,19 +156,28 @@ function RecurringForm({
   const [amount, setAmount] = useState(expense ? String(expense.amount) : '')
   const [dayOfMonth, setDayOfMonth] = useState(expense?.dayOfMonth ?? 1)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(expense?.paymentMethod ?? 'card')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const parsedAmount = Number(amount)
   const valid = name.trim() !== '' && amount.trim() !== '' && !Number.isNaN(parsedAmount) && parsedAmount > 0
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!valid) return
-    if (expense) {
-      updateRecurring(expense.id, { name, category, amount: parsedAmount, dayOfMonth, paymentMethod })
-    } else {
-      addRecurring({ name, category, amount: parsedAmount, dayOfMonth, paymentMethod, active: true })
+    setSaving(true)
+    setError('')
+    try {
+      if (expense) {
+        await updateRecurring(expense.id, { name, category, amount: parsedAmount, dayOfMonth, paymentMethod })
+      } else {
+        await addRecurring({ name, category, amount: parsedAmount, dayOfMonth, paymentMethod })
+      }
+      onDone()
+    } catch (e) {
+      setError(apiErrorMessage(e))
+      setSaving(false)
     }
-    onDone()
   }
 
   return (
@@ -220,11 +225,12 @@ function RecurringForm({
             </Select>
           </Field>
         </div>
+        {error && <p className="text-sm font-bold text-alert">{error}</p>}
         <div className="flex gap-2">
-          <Button type="submit" disabled={!valid} className="flex-1">
-            {expense ? 'Save changes' : 'Add bill'}
+          <Button type="submit" disabled={!valid || saving} className="flex-1">
+            {saving ? 'Saving…' : expense ? 'Save changes' : 'Add bill'}
           </Button>
-          <Button type="button" variant="secondary" onClick={onDone}>
+          <Button type="button" variant="secondary" onClick={onDone} disabled={saving}>
             Cancel
           </Button>
         </div>

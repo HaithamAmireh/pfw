@@ -1,221 +1,190 @@
-import { useEffect, useState } from 'react'
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import { v4 as uuid } from 'uuid'
 import type { Budget, Expense, PaymentMethod, RecurringExpense, SavingsGoal, Settings, CategoryId } from './types'
-import { SEED_RECURRING, SEED_SETTINGS } from './seed'
-import { dateForDayInMonth, dayOfMonthFromISO, isSameMonthKey, monthKey, todayISO } from './date'
+import { api, apiErrorMessage } from './api'
 
 interface WalletState {
+  loaded: boolean
+  error: string | null
+
   expenses: Expense[]
   recurring: RecurringExpense[]
   settings: Settings
 
-  addExpense: (input: Omit<Expense, 'id' | 'createdAt'>) => void
-  updateExpense: (id: string, patch: Partial<Omit<Expense, 'id'>>) => void
-  deleteExpense: (id: string) => void
+  bootstrap: () => Promise<void>
+  reset: () => void
+  clearError: () => void
 
-  addRecurring: (input: Omit<RecurringExpense, 'id' | 'createdAt' | 'amountHistory'>) => void
-  updateRecurring: (id: string, patch: Partial<Omit<RecurringExpense, 'id'>>) => void
-  deleteRecurring: (id: string) => void
-  toggleRecurringActive: (id: string) => void
+  addExpense: (input: { date: string; amount: number; category: CategoryId; note: string; paymentMethod: PaymentMethod }) => Promise<void>
+  updateExpense: (id: string, patch: Partial<Omit<Expense, 'id'>>) => Promise<void>
+  deleteExpense: (id: string) => Promise<void>
 
-  ensureRecurringGenerated: (key?: string) => void
+  addRecurring: (input: { name: string; category: CategoryId; amount: number; paymentMethod: PaymentMethod; dayOfMonth: number }) => Promise<void>
+  updateRecurring: (id: string, patch: Partial<Omit<RecurringExpense, 'id' | 'amountHistory'>>) => Promise<void>
+  deleteRecurring: (id: string) => Promise<void>
+  toggleRecurringActive: (id: string) => Promise<void>
 
-  setIncome: (amount: number) => void
-  setBudget: (budget: Budget) => void
-  removeBudget: (category: Budget['category']) => void
+  setIncome: (amount: number) => Promise<void>
+  setBudget: (budget: Budget) => Promise<void>
+  removeBudget: (category: Budget['category']) => Promise<void>
 
-  addSavingsGoal: (input: Omit<SavingsGoal, 'id' | 'createdAt'>) => void
-  updateSavingsGoal: (id: string, patch: Partial<Omit<SavingsGoal, 'id'>>) => void
-  deleteSavingsGoal: (id: string) => void
+  addSavingsGoal: (input: Omit<SavingsGoal, 'id' | 'createdAt'>) => Promise<void>
+  updateSavingsGoal: (id: string, patch: Partial<Omit<SavingsGoal, 'id'>>) => Promise<void>
+  deleteSavingsGoal: (id: string) => Promise<void>
 }
 
-// Captured from inside the creator below so onRehydrateStorage can call them
-// without touching the `useWallet` binding — persist() hydrates synchronously
-// for localStorage, which runs before `const useWallet = create(...)` finishes
-// assigning, so referencing `useWallet` there throws (temporal dead zone) and
-// silently aborts hydration. The creator runs first, so set/get are ready by
-// the time hydrate() calls onRehydrateStorage.
-let boundSet: (partial: Partial<WalletState> | ((s: WalletState) => Partial<WalletState>)) => void
-let boundGet: () => WalletState
+const EMPTY_SETTINGS: Settings = { monthlyIncome: 0, budgets: [], savingsGoals: [] }
 
-export const useWallet = create<WalletState>()(
-  persist(
-    (set, get) => {
-      boundSet = set
-      boundGet = get
-      return {
-      expenses: [],
-      recurring: [],
-      settings: SEED_SETTINGS,
+export const useWallet = create<WalletState>((set, get) => ({
+  loaded: false,
+  error: null,
+  expenses: [],
+  recurring: [],
+  settings: EMPTY_SETTINGS,
 
-      addExpense: (input) =>
-        set((s) => ({
-          expenses: [
-            { ...input, id: uuid(), createdAt: new Date().toISOString() },
-            ...s.expenses,
-          ],
-        })),
+  bootstrap: async () => {
+    try {
+      const data = await api.bootstrap()
+      set({ ...data, loaded: true, error: null })
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
 
-      updateExpense: (id, patch) =>
-        set((s) => ({
-          expenses: s.expenses.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-        })),
+  reset: () => set({ loaded: false, error: null, expenses: [], recurring: [], settings: EMPTY_SETTINGS }),
+  clearError: () => set({ error: null }),
 
-      deleteExpense: (id) =>
-        set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) })),
+  addExpense: async (input) => {
+    try {
+      const created = await api.createExpense(input)
+      set((s) => ({ expenses: [created, ...s.expenses], error: null }))
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
 
-      addRecurring: (input) =>
-        set((s) => ({
-          recurring: [
-            {
-              ...input,
-              id: uuid(),
-              createdAt: new Date().toISOString(),
-              amountHistory: [{ date: new Date().toISOString(), amount: input.amount }],
-            },
-            ...s.recurring,
-          ],
-        })),
+  updateExpense: async (id, patch) => {
+    try {
+      const updated = await api.updateExpense(id, patch)
+      set((s) => ({ expenses: s.expenses.map((e) => (e.id === id ? updated : e)), error: null }))
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
 
-      updateRecurring: (id, patch) =>
-        set((s) => ({
-          recurring: s.recurring.map((r) => {
-            if (r.id !== id) return r
-            const next = { ...r, ...patch }
-            if (typeof patch.amount === 'number' && patch.amount !== r.amount) {
-              next.amountHistory = [
-                ...r.amountHistory,
-                { date: new Date().toISOString(), amount: patch.amount },
-              ]
-            }
-            return next
-          }),
-        })),
+  deleteExpense: async (id) => {
+    try {
+      await api.deleteExpense(id)
+      set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id), error: null }))
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
 
-      deleteRecurring: (id) =>
-        set((s) => ({ recurring: s.recurring.filter((r) => r.id !== id) })),
+  addRecurring: async (input) => {
+    try {
+      const created = await api.createRecurring(input)
+      set((s) => ({ recurring: [created, ...s.recurring], error: null }))
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
 
-      toggleRecurringActive: (id) =>
-        set((s) => ({
-          recurring: s.recurring.map((r) => (r.id === id ? { ...r, active: !r.active } : r)),
-        })),
+  updateRecurring: async (id, patch) => {
+    try {
+      const updated = await api.updateRecurring(id, patch)
+      set((s) => ({ recurring: s.recurring.map((r) => (r.id === id ? updated : r)), error: null }))
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
 
-      ensureRecurringGenerated: (key = monthKey()) => {
-        const s = get()
-        const isCurrent = key === monthKey()
-        const todayDay = dayOfMonthFromISO(todayISO())
-        const toCreate: Expense[] = []
+  deleteRecurring: async (id) => {
+    try {
+      await api.deleteRecurring(id)
+      set((s) => ({ recurring: s.recurring.filter((r) => r.id !== id), error: null }))
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
 
-        for (const item of s.recurring) {
-          if (!item.active) continue
-          const eligible = !isCurrent || item.dayOfMonth <= todayDay
-          if (!eligible) continue
+  toggleRecurringActive: async (id) => {
+    const current = get().recurring.find((r) => r.id === id)
+    if (!current) return
+    await get().updateRecurring(id, { active: !current.active })
+  },
 
-          const alreadyExists = s.expenses.some(
-            (e) => e.recurringId === item.id && isSameMonthKey(e.date, key),
-          )
-          if (alreadyExists) continue
+  setIncome: async (amount) => {
+    try {
+      const settings = await api.setIncome(amount)
+      set({ settings, error: null })
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
 
-          toCreate.push({
-            id: uuid(),
-            date: dateForDayInMonth(key, item.dayOfMonth),
-            amount: item.amount,
-            category: item.category,
-            note: item.name,
-            isRecurring: true,
-            recurringId: item.id,
-            paymentMethod: item.paymentMethod,
-            createdAt: new Date().toISOString(),
-          })
-        }
+  setBudget: async (budget) => {
+    const next = [...get().settings.budgets.filter((b) => b.category !== budget.category), budget]
+    try {
+      const settings = await api.setBudgets(next)
+      set({ settings, error: null })
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
 
-        if (toCreate.length > 0) {
-          set((state) => ({ expenses: [...toCreate, ...state.expenses] }))
-        }
-      },
+  removeBudget: async (category) => {
+    const next = get().settings.budgets.filter((b) => b.category !== category)
+    try {
+      const settings = await api.setBudgets(next)
+      set({ settings, error: null })
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
 
-      setIncome: (amount) =>
-        set((s) => ({ settings: { ...s.settings, monthlyIncome: amount } })),
+  addSavingsGoal: async (input) => {
+    const goal: SavingsGoal = { ...input, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
+    const next = [...get().settings.savingsGoals, goal]
+    try {
+      const settings = await api.setGoals(next)
+      set({ settings, error: null })
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
 
-      setBudget: (budget) =>
-        set((s) => ({
-          settings: {
-            ...s.settings,
-            budgets: [
-              ...s.settings.budgets.filter((b) => b.category !== budget.category),
-              budget,
-            ],
-          },
-        })),
+  updateSavingsGoal: async (id, patch) => {
+    const next = get().settings.savingsGoals.map((g) => (g.id === id ? { ...g, ...patch } : g))
+    try {
+      const settings = await api.setGoals(next)
+      set({ settings, error: null })
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
 
-      removeBudget: (category) =>
-        set((s) => ({
-          settings: {
-            ...s.settings,
-            budgets: s.settings.budgets.filter((b) => b.category !== category),
-          },
-        })),
-
-      addSavingsGoal: (input) =>
-        set((s) => ({
-          settings: {
-            ...s.settings,
-            savingsGoals: [
-              ...s.settings.savingsGoals,
-              { ...input, id: uuid(), createdAt: new Date().toISOString() },
-            ],
-          },
-        })),
-
-      updateSavingsGoal: (id, patch) =>
-        set((s) => ({
-          settings: {
-            ...s.settings,
-            savingsGoals: s.settings.savingsGoals.map((g) =>
-              g.id === id ? { ...g, ...patch } : g,
-            ),
-          },
-        })),
-
-      deleteSavingsGoal: (id) =>
-        set((s) => ({
-          settings: {
-            ...s.settings,
-            savingsGoals: s.settings.savingsGoals.filter((g) => g.id !== id),
-          },
-        })),
-      }
-    },
-    {
-      name: 'ledger-wallet-v1',
-      onRehydrateStorage: () => (state) => {
-        if (!state) return
-        // first-ever load: no persisted recurring items yet, so seed them
-        if (state.recurring.length === 0 && state.expenses.length === 0) {
-          boundSet({ recurring: SEED_RECURRING.map((r) => ({ ...r, id: uuid() })) })
-        }
-        boundGet().ensureRecurringGenerated()
-      },
-    },
-  ),
-)
+  deleteSavingsGoal: async (id) => {
+    const next = get().settings.savingsGoals.filter((g) => g.id !== id)
+    try {
+      const settings = await api.setGoals(next)
+      set({ settings, error: null })
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
+}))
 
 export type { CategoryId, PaymentMethod }
-
-// Local storage hydration happens after first mount, so a page can flash
-// empty before seed data lands. Gate first paint on this instead.
-export function useHydrated(): boolean {
-  const [hydrated, setHydrated] = useState(() => useWallet.persist.hasHydrated())
-
-  useEffect(() => {
-    if (useWallet.persist.hasHydrated()) {
-      setHydrated(true)
-      return
-    }
-    return useWallet.persist.onFinishHydration(() => setHydrated(true))
-  }, [])
-
-  return hydrated
-}

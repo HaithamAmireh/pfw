@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Trash2, X } from 'lucide-react'
 import { useWallet } from '@/lib/store'
+import { apiErrorMessage } from '@/lib/api'
 import { todayISO } from '@/lib/date'
 import type { CategoryId, PaymentMethod } from '@/lib/types'
 import { Badge, Button, Field, Input, Select } from '@/components/ui'
@@ -33,35 +34,40 @@ export default function AddExpense() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(existing?.paymentMethod ?? 'card')
   const [error, setError] = useState('')
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const parsedAmount = Number(amount)
   const valid = amount.trim() !== '' && !Number.isNaN(parsedAmount) && parsedAmount > 0
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!valid) {
       setError('Enter an amount greater than 0')
       return
     }
-    if (isEditing && existing) {
-      updateExpense(existing.id, { amount: parsedAmount, category, note, date, paymentMethod })
-    } else {
-      addExpense({
-        amount: parsedAmount,
-        category,
-        note,
-        date,
-        paymentMethod,
-        isRecurring: false,
-      })
+    setSaving(true)
+    try {
+      if (isEditing && existing) {
+        await updateExpense(existing.id, { amount: parsedAmount, category, note, date, paymentMethod })
+      } else {
+        await addExpense({ amount: parsedAmount, category, note, date, paymentMethod })
+      }
+      navigate(-1)
+    } catch (e) {
+      setError(apiErrorMessage(e))
+      setSaving(false)
     }
-    navigate(-1)
   }
 
-  function handleDelete() {
-    if (existing) {
-      deleteExpense(existing.id)
+  async function handleDelete() {
+    if (!existing) return
+    setSaving(true)
+    try {
+      await deleteExpense(existing.id)
       navigate(-1)
+    } catch (e) {
+      setError(apiErrorMessage(e))
+      setSaving(false)
     }
   }
 
@@ -139,17 +145,17 @@ export default function AddExpense() {
           </Field>
         </div>
 
-        <Button type="submit" size="lg" full disabled={!valid}>
-          {isEditing ? 'Save changes' : 'Save expense'}
+        <Button type="submit" size="lg" full disabled={!valid || saving}>
+          {saving ? 'Saving…' : isEditing ? 'Save changes' : 'Save expense'}
         </Button>
 
         {isEditing && (
           confirmingDelete ? (
             <div className="flex gap-2">
-              <Button type="button" variant="danger" size="sm" onClick={handleDelete} className="flex-1">
-                Confirm delete
+              <Button type="button" variant="danger" size="sm" onClick={handleDelete} disabled={saving} className="flex-1">
+                {saving ? 'Deleting…' : 'Confirm delete'}
               </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmingDelete(false)}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmingDelete(false)} disabled={saving}>
                 Cancel
               </Button>
             </div>

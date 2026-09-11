@@ -22,13 +22,13 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build frontend
         run: npm run build
 
-      - name: Copy build via SCP to Hetzner
+      - name: Copy frontend build via SCP to Hetzner
         uses: appleboy/scp-action@v0.1.5
         with:
           host: ${{ secrets.HETZNER_HOST }}
@@ -39,10 +39,25 @@ jobs:
           strip_components: 1
           overwrite: true
 
-      - name: Reload nginx on server
+      - name: Copy backend source via SCP to Hetzner
+        uses: appleboy/scp-action@v0.1.5
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          source: "server/*"
+          target: ${{ secrets.API_DEPLOY_PATH }}
+          strip_components: 1
+          overwrite: true
+
+      - name: Install backend deps and restart services on server
         uses: appleboy/ssh-action@v0.1.5
         with:
           host: ${{ secrets.HETZNER_HOST }}
           username: ${{ secrets.HETZNER_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
-          script: sudo systemctl reload nginx
+          script: |
+            cd ${{ secrets.API_DEPLOY_PATH }}
+            npm ci --omit=dev
+            sudo systemctl restart pfw-api
+            sudo systemctl reload nginx
