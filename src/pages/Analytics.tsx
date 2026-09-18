@@ -126,7 +126,7 @@ export default function Analytics() {
                     stroke="#3D5AFE"
                     strokeWidth={3}
                     dot={{ r: 2.5, fill: '#3D5AFE', stroke: '#15130F', strokeWidth: 1 }}
-                    activeDot={{ r: 5, fill: '#FFD400', stroke: '#15130F', strokeWidth: 2 }}
+                    activeDot={{ r: 5, fill: '#FF7A00', stroke: '#15130F', strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
