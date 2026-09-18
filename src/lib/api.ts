@@ -62,7 +62,6 @@ export const api = {
     category: CategoryId
     amount: number
     paymentMethod: PaymentMethod
-    dayOfMonth: number
   }) => request<RecurringExpense>('/recurring', { method: 'POST', body: JSON.stringify(input) }),
   updateRecurring: (id: string, patch: Partial<Omit<RecurringExpense, 'id' | 'amountHistory'>>) =>
     request<RecurringExpense>(`/recurring/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),

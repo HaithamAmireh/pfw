@@ -5,10 +5,10 @@ import { recurringToJson } from '../serialize.js'
 
 export const recurringRouter = Router()
 
-const listStmt = db.prepare('SELECT * FROM recurring_expenses WHERE user_id = ? ORDER BY day_of_month ASC')
+const listStmt = db.prepare('SELECT * FROM recurring_expenses WHERE user_id = ? ORDER BY name ASC')
 const insertStmt = db.prepare(`
-  INSERT INTO recurring_expenses (id, user_id, name, category, amount, active, payment_method, day_of_month, amount_history, created_at)
-  VALUES (@id, @user_id, @name, @category, @amount, @active, @payment_method, @day_of_month, @amount_history, @created_at)
+  INSERT INTO recurring_expenses (id, user_id, name, category, amount, active, payment_method, amount_history, created_at)
+  VALUES (@id, @user_id, @name, @category, @amount, @active, @payment_method, @amount_history, @created_at)
 `)
 const getOwnedStmt = db.prepare('SELECT * FROM recurring_expenses WHERE id = ? AND user_id = ?')
 const deleteStmt = db.prepare('DELETE FROM recurring_expenses WHERE id = ? AND user_id = ?')
@@ -21,10 +21,7 @@ function isValidRecurring(body) {
     typeof body.amount === 'number' &&
     body.amount > 0 &&
     typeof body.category === 'string' &&
-    typeof body.paymentMethod === 'string' &&
-    Number.isInteger(body.dayOfMonth) &&
-    body.dayOfMonth >= 1 &&
-    body.dayOfMonth <= 28
+    typeof body.paymentMethod === 'string'
   )
 }
 
@@ -43,7 +40,6 @@ recurringRouter.post('/', (req, res) => {
     amount: req.body.amount,
     active: 1,
     payment_method: req.body.paymentMethod,
-    day_of_month: req.body.dayOfMonth,
     amount_history: JSON.stringify([{ date: now, amount: req.body.amount }]),
     created_at: now,
   }
@@ -70,15 +66,11 @@ recurringRouter.patch('/:id', (req, res) => {
     active: typeof req.body.active === 'boolean' ? (req.body.active ? 1 : 0) : existing.active,
     payment_method:
       typeof req.body.paymentMethod === 'string' ? req.body.paymentMethod : existing.payment_method,
-    day_of_month:
-      Number.isInteger(req.body.dayOfMonth) && req.body.dayOfMonth >= 1 && req.body.dayOfMonth <= 28
-        ? req.body.dayOfMonth
-        : existing.day_of_month,
     amount_history: JSON.stringify(amountHistory),
   }
   db.prepare(
     `UPDATE recurring_expenses SET name = @name, category = @category, amount = @amount, active = @active,
-     payment_method = @payment_method, day_of_month = @day_of_month, amount_history = @amount_history
+     payment_method = @payment_method, amount_history = @amount_history
      WHERE id = @id AND user_id = @user_id`,
   ).run(next)
   res.json(recurringToJson(next))

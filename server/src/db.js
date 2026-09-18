@@ -42,7 +42,6 @@ db.exec(`
     amount REAL NOT NULL,
     active INTEGER NOT NULL DEFAULT 1,
     payment_method TEXT NOT NULL,
-    day_of_month INTEGER NOT NULL,
     amount_history TEXT NOT NULL DEFAULT '[]',
     created_at TEXT NOT NULL
   );
@@ -55,3 +54,13 @@ db.exec(`
     savings_goals TEXT NOT NULL DEFAULT '[]'
   );
 `)
+
+// Bills used to only generate on their billing day; now they generate as
+// soon as the month starts, so the column no longer means anything —
+// dropped here for databases created before this change.
+const hasDayOfMonth = db
+  .prepare("SELECT 1 FROM pragma_table_info('recurring_expenses') WHERE name = 'day_of_month'")
+  .get()
+if (hasDayOfMonth) {
+  db.exec('ALTER TABLE recurring_expenses DROP COLUMN day_of_month')
+}

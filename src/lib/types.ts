@@ -8,7 +8,7 @@ export type CategoryId =
   | 'entertainment'
   | 'other'
 
-export type PaymentMethod = 'card' | 'cash' | 'bank_transfer' | 'other'
+export type PaymentMethod = 'card' | 'cash' | 'bank_transfer' | 'cliq' | 'other'
 
 export type SpendGroup = 'essential' | 'subscription' | 'discretionary'
 
@@ -41,7 +41,6 @@ export interface RecurringExpense {
   amount: number
   active: boolean
   paymentMethod: PaymentMethod
-  dayOfMonth: number // 1-28, day the bill generates on
   createdAt: string
   // history of amount changes: { date, amount }[] — used to flag price changes
   amountHistory: { date: string; amount: number }[]

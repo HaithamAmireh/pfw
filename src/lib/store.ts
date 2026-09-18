@@ -18,7 +18,7 @@ interface WalletState {
   updateExpense: (id: string, patch: Partial<Omit<Expense, 'id'>>) => Promise<void>
   deleteExpense: (id: string) => Promise<void>
 
-  addRecurring: (input: { name: string; category: CategoryId; amount: number; paymentMethod: PaymentMethod; dayOfMonth: number }) => Promise<void>
+  addRecurring: (input: { name: string; category: CategoryId; amount: number; paymentMethod: PaymentMethod }) => Promise<void>
   updateRecurring: (id: string, patch: Partial<Omit<RecurringExpense, 'id' | 'amountHistory'>>) => Promise<void>
   deleteRecurring: (id: string) => Promise<void>
   toggleRecurringActive: (id: string) => Promise<void>

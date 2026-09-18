@@ -20,7 +20,6 @@ export function recurringToJson(row) {
     amount: row.amount,
     active: !!row.active,
     paymentMethod: row.payment_method,
-    dayOfMonth: row.day_of_month,
     createdAt: row.created_at,
     amountHistory: JSON.parse(row.amount_history),
   }

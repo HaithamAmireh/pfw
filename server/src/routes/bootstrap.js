@@ -6,7 +6,7 @@ import { expenseToJson, recurringToJson, settingsToJson } from '../serialize.js'
 export const bootstrapRouter = Router()
 
 const listExpenses = db.prepare('SELECT * FROM expenses WHERE user_id = ? ORDER BY date DESC, created_at DESC')
-const listRecurring = db.prepare('SELECT * FROM recurring_expenses WHERE user_id = ? ORDER BY day_of_month ASC')
+const listRecurring = db.prepare('SELECT * FROM recurring_expenses WHERE user_id = ? ORDER BY name ASC')
 const getSettings = db.prepare('SELECT * FROM settings WHERE user_id = ?')
 
 // Single call on app load: generates this month's missing recurring entries,

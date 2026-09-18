@@ -25,12 +25,6 @@ export function daysInMonthKey(key: string): number {
   return getDaysInMonth(new Date(y, m - 1, 1))
 }
 
-export function dateForDayInMonth(key: string, day: number): string {
-  const [y, m] = key.split('-').map(Number)
-  const clamped = Math.min(day, daysInMonthKey(key))
-  return format(new Date(y, m - 1, clamped), 'yyyy-MM-dd')
-}
-
 export function isSameMonthKey(dateISO: string, key: string): boolean {
   return monthKey(dateISO) === key
 }

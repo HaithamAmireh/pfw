@@ -14,6 +14,7 @@ const PAYMENT_METHODS: { id: PaymentMethod; label: string }[] = [
   { id: 'card', label: 'Card' },
   { id: 'cash', label: 'Cash' },
   { id: 'bank_transfer', label: 'Bank transfer' },
+  { id: 'cliq', label: 'CliQ' },
   { id: 'other', label: 'Other' },
 ]
 
@@ -26,7 +27,7 @@ export default function Recurring() {
   const [formId, setFormId] = useState<'new' | string | null>(null)
 
   const total = recurringMonthlyTotal(recurring)
-  const sorted = [...recurring].sort((a, b) => a.dayOfMonth - b.dayOfMonth)
+  const sorted = [...recurring].sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <div className="flex flex-col gap-5">
@@ -86,7 +87,7 @@ export default function Recurring() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-display font-bold">{r.name}</p>
-                  <p className="text-xs text-ink/50">{cat.label}, bills on day {r.dayOfMonth}</p>
+                  <p className="text-xs text-ink/50">{cat.label}</p>
                 </div>
                 <span className="tnum shrink-0 font-display font-bold">{money(r.amount)}</span>
 
@@ -154,7 +155,6 @@ function RecurringForm({
   const [name, setName] = useState(expense?.name ?? '')
   const [category, setCategory] = useState<CategoryId>(expense?.category ?? 'subscription')
   const [amount, setAmount] = useState(expense ? String(expense.amount) : '')
-  const [dayOfMonth, setDayOfMonth] = useState(expense?.dayOfMonth ?? 1)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(expense?.paymentMethod ?? 'card')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -169,9 +169,9 @@ function RecurringForm({
     setError('')
     try {
       if (expense) {
-        await updateRecurring(expense.id, { name, category, amount: parsedAmount, dayOfMonth, paymentMethod })
+        await updateRecurring(expense.id, { name, category, amount: parsedAmount, paymentMethod })
       } else {
-        await addRecurring({ name, category, amount: parsedAmount, dayOfMonth, paymentMethod })
+        await addRecurring({ name, category, amount: parsedAmount, paymentMethod })
       }
       onDone()
     } catch (e) {
@@ -186,25 +186,14 @@ function RecurringForm({
         <Field label="Name">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Rent" required />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Amount">
-            <Input
-              inputMode="decimal"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
-              placeholder="0.00"
-            />
-          </Field>
-          <Field label="Bills on day">
-            <Input
-              type="number"
-              min={1}
-              max={28}
-              value={dayOfMonth}
-              onChange={(e) => setDayOfMonth(Number(e.target.value))}
-            />
-          </Field>
-        </div>
+        <Field label="Amount">
+          <Input
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+            placeholder="0.00"
+          />
+        </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Category">
             <Select value={category} onChange={(e) => setCategory(e.target.value as CategoryId)}>

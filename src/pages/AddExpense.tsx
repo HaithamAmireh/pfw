@@ -13,6 +13,7 @@ const PAYMENT_METHODS: { id: PaymentMethod; label: string }[] = [
   { id: 'card', label: 'Card' },
   { id: 'cash', label: 'Cash' },
   { id: 'bank_transfer', label: 'Bank transfer' },
+  { id: 'cliq', label: 'CliQ' },
   { id: 'other', label: 'Other' },
 ]
 
