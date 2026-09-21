@@ -1,5 +1,14 @@
 import { create } from 'zustand'
-import type { Budget, Expense, PaymentMethod, RecurringExpense, SavingsGoal, Settings, CategoryId } from './types'
+import type {
+  Budget,
+  Expense,
+  PaymentMethod,
+  RecurringExpense,
+  SavingsGoal,
+  Settings,
+  CategoryId,
+  ShoppingItem,
+} from './types'
 import { api, apiErrorMessage } from './api'
 
 interface WalletState {
@@ -9,6 +18,7 @@ interface WalletState {
   expenses: Expense[]
   recurring: RecurringExpense[]
   settings: Settings
+  shoppingItems: ShoppingItem[]
 
   bootstrap: () => Promise<void>
   reset: () => void
@@ -30,6 +40,14 @@ interface WalletState {
   addSavingsGoal: (input: Omit<SavingsGoal, 'id' | 'createdAt'>) => Promise<void>
   updateSavingsGoal: (id: string, patch: Partial<Omit<SavingsGoal, 'id'>>) => Promise<void>
   deleteSavingsGoal: (id: string) => Promise<void>
+
+  addShoppingItem: (name: string) => Promise<void>
+  deleteShoppingItem: (id: string) => Promise<void>
+  checkShoppingItem: (
+    id: string,
+    input: { amount: number; category: CategoryId; paymentMethod: PaymentMethod; date: string },
+  ) => Promise<void>
+  uncheckShoppingItem: (id: string) => Promise<void>
 }
 
 const EMPTY_SETTINGS: Settings = { monthlyIncome: 0, budgets: [], savingsGoals: [] }
@@ -40,6 +58,7 @@ export const useWallet = create<WalletState>((set, get) => ({
   expenses: [],
   recurring: [],
   settings: EMPTY_SETTINGS,
+  shoppingItems: [],
 
   bootstrap: async () => {
     try {
@@ -51,7 +70,8 @@ export const useWallet = create<WalletState>((set, get) => ({
     }
   },
 
-  reset: () => set({ loaded: false, error: null, expenses: [], recurring: [], settings: EMPTY_SETTINGS }),
+  reset: () =>
+    set({ loaded: false, error: null, expenses: [], recurring: [], settings: EMPTY_SETTINGS, shoppingItems: [] }),
   clearError: () => set({ error: null }),
 
   addExpense: async (input) => {
@@ -180,6 +200,54 @@ export const useWallet = create<WalletState>((set, get) => ({
     try {
       const settings = await api.setGoals(next)
       set({ settings, error: null })
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
+
+  addShoppingItem: async (name) => {
+    try {
+      const created = await api.createShoppingItem(name)
+      set((s) => ({ shoppingItems: [created, ...s.shoppingItems], error: null }))
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
+
+  deleteShoppingItem: async (id) => {
+    try {
+      await api.deleteShoppingItem(id)
+      set((s) => ({ shoppingItems: s.shoppingItems.filter((i) => i.id !== id), error: null }))
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
+
+  checkShoppingItem: async (id, input) => {
+    try {
+      const { item, expense } = await api.checkShoppingItem(id, input)
+      set((s) => ({
+        shoppingItems: s.shoppingItems.map((i) => (i.id === id ? item : i)),
+        expenses: [expense, ...s.expenses],
+        error: null,
+      }))
+    } catch (e) {
+      set({ error: apiErrorMessage(e) })
+      throw e
+    }
+  },
+
+  uncheckShoppingItem: async (id) => {
+    try {
+      const { item, deletedExpenseId } = await api.uncheckShoppingItem(id)
+      set((s) => ({
+        shoppingItems: s.shoppingItems.map((i) => (i.id === id ? item : i)),
+        expenses: deletedExpenseId ? s.expenses.filter((e) => e.id !== deletedExpenseId) : s.expenses,
+        error: null,
+      }))
     } catch (e) {
       set({ error: apiErrorMessage(e) })
       throw e

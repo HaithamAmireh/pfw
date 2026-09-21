@@ -64,3 +64,12 @@ export interface Settings {
   budgets: Budget[]
   savingsGoals: SavingsGoal[]
 }
+
+export interface ShoppingItem {
+  id: string
+  name: string
+  checked: boolean
+  expenseId?: string // set once checked off — links to the expense it created
+  createdAt: string
+  checkedAt?: string
+}

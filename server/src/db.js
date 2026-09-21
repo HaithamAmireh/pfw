@@ -53,6 +53,17 @@ db.exec(`
     budgets TEXT NOT NULL DEFAULT '[]',
     savings_goals TEXT NOT NULL DEFAULT '[]'
   );
+
+  CREATE TABLE IF NOT EXISTS shopping_items (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    checked INTEGER NOT NULL DEFAULT 0,
+    expense_id TEXT REFERENCES expenses(id) ON DELETE SET NULL,
+    created_at TEXT NOT NULL,
+    checked_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_shopping_items_user ON shopping_items(user_id);
 `)
 
 // Bills used to only generate on their billing day; now they generate as

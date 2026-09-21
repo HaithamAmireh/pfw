@@ -7,6 +7,7 @@ import { authRouter } from './routes/auth.js'
 import { expensesRouter } from './routes/expenses.js'
 import { recurringRouter } from './routes/recurring.js'
 import { settingsRouter } from './routes/settings.js'
+import { shoppingRouter } from './routes/shopping.js'
 import { bootstrapRouter } from './routes/bootstrap.js'
 
 const app = express()
@@ -32,6 +33,7 @@ app.use('/api/bootstrap', requireAuth, bootstrapRouter)
 app.use('/api/expenses', requireAuth, expensesRouter)
 app.use('/api/recurring', requireAuth, recurringRouter)
 app.use('/api/settings', requireAuth, settingsRouter)
+app.use('/api/shopping', requireAuth, shoppingRouter)
 
 app.use((err, _req, res, _next) => {
   console.error(err)

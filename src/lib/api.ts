@@ -1,4 +1,13 @@
-import type { Budget, Expense, PaymentMethod, RecurringExpense, SavingsGoal, Settings, CategoryId } from './types'
+import type {
+  Budget,
+  Expense,
+  PaymentMethod,
+  RecurringExpense,
+  SavingsGoal,
+  Settings,
+  CategoryId,
+  ShoppingItem,
+} from './types'
 
 export class ApiError extends Error {
   status: number
@@ -31,6 +40,7 @@ export interface BootstrapPayload {
   expenses: Expense[]
   recurring: RecurringExpense[]
   settings: Settings
+  shoppingItems: ShoppingItem[]
 }
 
 export const api = {
@@ -73,6 +83,20 @@ export const api = {
     request<Settings>('/settings/budgets', { method: 'PUT', body: JSON.stringify({ budgets }) }),
   setGoals: (savingsGoals: SavingsGoal[]) =>
     request<Settings>('/settings/goals', { method: 'PUT', body: JSON.stringify({ savingsGoals }) }),
+
+  createShoppingItem: (name: string) =>
+    request<ShoppingItem>('/shopping', { method: 'POST', body: JSON.stringify({ name }) }),
+  deleteShoppingItem: (id: string) => request<void>(`/shopping/${id}`, { method: 'DELETE' }),
+  checkShoppingItem: (
+    id: string,
+    input: { amount: number; category: CategoryId; paymentMethod: PaymentMethod; date: string },
+  ) =>
+    request<{ item: ShoppingItem; expense: Expense }>(`/shopping/${id}/check`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  uncheckShoppingItem: (id: string) =>
+    request<{ item: ShoppingItem; deletedExpenseId?: string }>(`/shopping/${id}/uncheck`, { method: 'POST' }),
 }
 
 export function apiErrorMessage(e: unknown): string {

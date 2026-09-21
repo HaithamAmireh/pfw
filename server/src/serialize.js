@@ -25,6 +25,17 @@ export function recurringToJson(row) {
   }
 }
 
+export function shoppingItemToJson(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    checked: !!row.checked,
+    expenseId: row.expense_id ?? undefined,
+    createdAt: row.created_at,
+    checkedAt: row.checked_at ?? undefined,
+  }
+}
+
 export function settingsToJson(row) {
   if (!row) return { monthlyIncome: 0, budgets: [], savingsGoals: [] }
   return {

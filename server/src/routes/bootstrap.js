@@ -1,13 +1,16 @@
 import { Router } from 'express'
 import { db } from '../db.js'
 import { ensureRecurringGenerated } from '../recurring.js'
-import { expenseToJson, recurringToJson, settingsToJson } from '../serialize.js'
+import { expenseToJson, recurringToJson, settingsToJson, shoppingItemToJson } from '../serialize.js'
 
 export const bootstrapRouter = Router()
 
 const listExpenses = db.prepare('SELECT * FROM expenses WHERE user_id = ? ORDER BY date DESC, created_at DESC')
 const listRecurring = db.prepare('SELECT * FROM recurring_expenses WHERE user_id = ? ORDER BY name ASC')
 const getSettings = db.prepare('SELECT * FROM settings WHERE user_id = ?')
+const listShopping = db.prepare(
+  'SELECT * FROM shopping_items WHERE user_id = ? ORDER BY checked ASC, created_at DESC',
+)
 
 // Single call on app load: generates this month's missing recurring entries,
 // then returns everything the client needs to render — replaces the old
@@ -19,5 +22,6 @@ bootstrapRouter.get('/', (req, res) => {
     expenses: listExpenses.all(req.userId).map(expenseToJson),
     recurring: listRecurring.all(req.userId).map(recurringToJson),
     settings: settingsToJson(getSettings.get(req.userId)),
+    shoppingItems: listShopping.all(req.userId).map(shoppingItemToJson),
   })
 })
