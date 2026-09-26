@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { WalletCards } from 'lucide-react'
 import { useAuth } from '@/lib/authStore'
 import { apiErrorMessage } from '@/lib/api'
-import { Button, Field, Input, cx } from '@/components/ui'
+import { Button, Field, Input, Segmented } from '@/components/ui'
+import { Wordmark } from '@/components/layout/AppShell'
 
 export default function Auth() {
   const [mode, setMode] = useState<'login' | 'register'>('login')
@@ -35,43 +35,27 @@ export default function Auth() {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10">
       <div className="w-full max-w-sm">
-        <div className="mb-6 flex flex-col items-center gap-2">
-          <div className="flex h-14 w-14 items-center justify-center rounded border-3 bg-volt shadow-brut">
-            <WalletCards className="h-7 w-7 text-ink" strokeWidth={2.5} />
-          </div>
-          <h1 className="font-display text-2xl font-bold">Ledger</h1>
+        <div className="mb-8 flex flex-col items-center gap-3 text-center">
+          <Wordmark className="scale-125" />
+          <p className="mt-2 max-w-[18rem] text-[15px] text-ink/70">Your month as a passbook. Log what you spend, see what’s left, and check a purchase before you make it.</p>
         </div>
 
-        <div className="mb-5 flex rounded border-3 bg-paper p-1 shadow-brut-sm">
-          <button
-            type="button"
-            onClick={() => {
-              setMode('login')
+        <div className="mb-4 flex justify-center">
+          <Segmented
+            label="Account"
+            value={mode}
+            onChange={(m) => {
+              setMode(m)
               setError('')
             }}
-            className={cx(
-              'flex-1 rounded px-3 py-2 font-display text-sm font-bold transition-colors',
-              mode === 'login' ? 'bg-volt text-ink' : 'text-ink/50',
-            )}
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode('register')
-              setError('')
-            }}
-            className={cx(
-              'flex-1 rounded px-3 py-2 font-display text-sm font-bold transition-colors',
-              mode === 'register' ? 'bg-volt text-ink' : 'text-ink/50',
-            )}
-          >
-            Create account
-          </button>
+            options={[
+              { id: 'login', label: 'Sign in' },
+              { id: 'register', label: 'Create account' },
+            ]}
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded border-3 bg-paper p-5 shadow-brut">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-md border-3 bg-paper p-5 shadow-brut">
           <Field label="Email">
             <Input
               type="email"
@@ -101,7 +85,11 @@ export default function Auth() {
             </Field>
           )}
 
-          {error && <p className="text-sm font-bold text-alert">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm font-bold text-alert">
+              {error}
+            </p>
+          )}
 
           <Button type="submit" size="lg" full disabled={submitting}>
             {submitting ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}

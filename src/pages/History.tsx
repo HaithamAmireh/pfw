@@ -1,141 +1,156 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Download, ListOrdered, Search } from 'lucide-react'
-import { useWallet } from '@/lib/store'
-import { CATEGORIES, getCategory } from '@/lib/categories'
-import { CategoryIcon } from '@/lib/icons'
-import { money } from '@/lib/format'
-import { downloadCSV, expensesToCSV } from '@/lib/csv'
-import { Button, Card, EmptyState, Field, Input, Select } from '@/components/ui'
-import type { CategoryId } from '@/lib/types'
+import { Download, Search, X } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
+import { useWallet } from '@/lib/store'
+import { useMonthParam } from '@/lib/useMonthParam'
+import { monthLedger } from '@/lib/analytics'
+import { CATEGORIES, getCategory } from '@/lib/categories'
+import { monthLabel } from '@/lib/date'
+import { figure } from '@/lib/format'
+import { downloadCSV, expensesToCSV } from '@/lib/csv'
+import { Button, EmptyState, Input, Ledger, LedgerRow, PageHeader, Segmented, Select } from '@/components/ui'
+import { MonthSwitcher } from '@/components/MonthSwitcher'
+import type { CategoryId } from '@/lib/types'
 
 export default function History() {
+  const [key, setKey] = useMonthParam()
   const expenses = useWallet((s) => s.expenses)
+  const income = useWallet((s) => s.settings.monthlyIncome)
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<CategoryId | 'all'>('all')
-  const [from, setFrom] = useState('')
-  const [to, setTo] = useState('')
 
-  const filtered = useMemo(() => {
-    return expenses
-      .filter((e) => (category === 'all' ? true : e.category === category))
-      .filter((e) => (from ? e.date >= from : true))
-      .filter((e) => (to ? e.date <= to : true))
-      .filter((e) =>
-        search.trim() === ''
-          ? true
-          : e.note.toLowerCase().includes(search.toLowerCase()) ||
-            getCategory(e.category).label.toLowerCase().includes(search.toLowerCase()),
-      )
-      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.createdAt.localeCompare(a.createdAt)))
-  }, [expenses, search, category, from, to])
+  const query = search.trim().toLowerCase()
+  const searching = query !== ''
 
-  const groups = useMemo(() => {
-    const map = new Map<string, typeof filtered>()
-    for (const e of filtered) {
-      const arr = map.get(e.date) ?? []
-      arr.push(e)
-      map.set(e.date, arr)
+  const ledger = useMemo(() => monthLedger(expenses, income, key), [expenses, income, key])
+
+  // Searching looks across every month; browsing shows one passbook page.
+  const rows = useMemo(() => {
+    const matchesCategory = (c: CategoryId) => category === 'all' || c === category
+    if (searching) {
+      return expenses
+        .filter(
+          (e) =>
+            matchesCategory(e.category) &&
+            (e.note.toLowerCase().includes(query) || getCategory(e.category).label.toLowerCase().includes(query)),
+        )
+        .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
+        .map((expense) => ({ expense, balance: undefined as number | undefined }))
     }
-    return [...map.entries()]
-  }, [filtered])
+    return ledger.filter((r) => matchesCategory(r.expense.category))
+  }, [searching, expenses, query, category, ledger])
 
-  const total = filtered.reduce((sum, e) => sum + e.amount, 0)
-
-  function handleExport() {
-    downloadCSV(`expenses-${Date.now()}.csv`, expensesToCSV(filtered))
-  }
+  const total = rows.reduce((s, r) => s + r.expense.amount, 0)
+  const filtered = searching || category !== 'all'
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-bold">History</h1>
-        <Button variant="secondary" size="sm" onClick={handleExport} disabled={filtered.length === 0}>
-          <Download className="mr-1.5 h-4 w-4" strokeWidth={2.5} />
-          Export CSV
-        </Button>
+      <PageHeader
+        title="History"
+        action={
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => downloadCSV(`ledger-${searching ? 'search' : key}.csv`, expensesToCSV(rows.map((r) => r.expense)))}
+            disabled={rows.length === 0}
+          >
+            <Download className="h-4 w-4" strokeWidth={2.5} />
+            Export
+          </Button>
+        }
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Segmented
+          label="History view"
+          value="passbook"
+          options={[
+            { id: 'passbook', label: 'Passbook', to: `/history?month=${key}` },
+            { id: 'insights', label: 'Insights', to: `/analytics?month=${key}` },
+          ]}
+        />
+        {!searching && <MonthSwitcher value={key} onChange={setKey} />}
       </div>
 
-      <Card padding="md" className="flex flex-col gap-3">
+      <div className="grid grid-cols-[1fr_auto] gap-2">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" strokeWidth={2.5} />
           <Input
-            aria-label="Search notes or categories"
-            placeholder="Search notes or categories"
+            type="search"
+            aria-label="Search every month"
+            placeholder="Search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 pr-9"
           />
+          {searching && (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={() => setSearch('')}
+              className="hit absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded text-ink/60 hover:text-ink"
+            >
+              <X className="h-4 w-4" strokeWidth={2.5} />
+            </button>
+          )}
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <Field label="Category">
-            <Select value={category} onChange={(e) => setCategory(e.target.value as CategoryId | 'all')}>
-              <option value="all">All</option>
-              {CATEGORIES.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="From">
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </Field>
-          <Field label="To">
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-          </Field>
-        </div>
-      </Card>
+        <Select
+          aria-label="Filter by category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value as CategoryId | 'all')}
+          className="w-[9.5rem]"
+        >
+          <option value="all">All categories</option>
+          {CATEGORIES.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.label}
+            </option>
+          ))}
+        </Select>
+      </div>
 
-      {filtered.length === 0 ? (
+      {rows.length === 0 ? (
         <EmptyState
-          icon={<ListOrdered className="h-10 w-10" strokeWidth={1.75} />}
-          title="No entries match"
-          message="Try widening your filters or search terms."
+          title={filtered ? 'No entries match' : `Nothing written in ${monthLabel(key)}`}
+          message={filtered ? 'Try another word or category.' : 'Expenses you log this month appear here with a running balance.'}
+          action={
+            !filtered ? (
+              <Link to="/add" className="inline-flex min-h-11 items-center rounded-md border-3 bg-volt px-4 font-display font-bold shadow-brut-sm">
+                Log an expense
+              </Link>
+            ) : undefined
+          }
         />
       ) : (
         <>
-          <div className="flex items-center justify-between px-1">
-            <span className="text-sm font-bold text-ink/55">{filtered.length} entries</span>
-            <span className="tnum text-sm font-bold text-ink/55">Total {money(total)}</span>
-          </div>
-          <div className="flex flex-col gap-4">
-            {groups.map(([date, items]) => (
-              <div key={date}>
-                <p className="mb-2 px-1 text-xs font-bold text-ink/45">
-                  {format(parseISO(date), 'EEEE, MMM d, yyyy')}
-                </p>
-                <Card padding="sm" className="divide-y-2 divide-ink/10">
-                  {items.map((e) => {
-                    const cat = getCategory(e.category)
-                    return (
-                      <Link
-                        key={e.id}
-                        to={`/add/${e.id}`}
-                        className="flex items-center gap-3 px-1 py-2.5 transition-colors hover:bg-canvas/50"
-                      >
-                        <div
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded border-2"
-                          style={{ backgroundColor: cat.hex }}
-                        >
-                          <CategoryIcon
-                            name={cat.icon}
-                            className={`h-4 w-4 ${cat.textOn === 'paper' ? 'text-paper' : 'text-ink'}`}
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-display font-bold">{e.note || cat.label}</p>
-                          <p className="text-xs text-ink/50">{cat.label}</p>
-                        </div>
-                        <span className="tnum shrink-0 font-display font-bold">{money(e.amount)}</span>
-                      </Link>
-                    )
-                  })}
-                </Card>
-              </div>
+          <p className="flex justify-between px-0.5 text-sm font-semibold text-ink/60">
+            <span>
+              {rows.length} {rows.length === 1 ? 'entry' : 'entries'}
+              {searching ? ' across all months' : ''}
+            </span>
+            <span className="tnum">
+              Total <b className="text-ink">{figure(total)} JD</b>
+            </span>
+          </p>
+          <Ledger caption={searching ? 'Search results' : `${monthLabel(key)} passbook`} showBalance={!searching}>
+            {!searching && category === 'all' && (
+              <LedgerRow day="1" title="Income" sub="Brought forward" balance={income} muted />
+            )}
+            {rows.map(({ expense: e, balance }) => (
+              <LedgerRow
+                key={e.id}
+                to={`/add/${e.id}`}
+                day={format(parseISO(e.date), 'd')}
+                title={e.note || getCategory(e.category).label}
+                category={e.category}
+                sub={searching ? format(parseISO(e.date), 'MMM yyyy') : e.isRecurring ? 'Recurring' : undefined}
+                debit={e.amount}
+                balance={balance}
+                showBalance={!searching}
+              />
             ))}
-          </div>
+          </Ledger>
         </>
       )}
     </div>

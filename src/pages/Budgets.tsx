@@ -1,54 +1,72 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, PiggyBank, Plus, Target } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 import { useWallet } from '@/lib/store'
 import { useMonthParam } from '@/lib/useMonthParam'
-import { budgetProgress } from '@/lib/analytics'
-import { CATEGORIES, getCategory } from '@/lib/categories'
-import { CategoryIcon } from '@/lib/icons'
-import { money, pct } from '@/lib/format'
+import { budgetProgress, type BudgetProgress } from '@/lib/analytics'
+import { CATEGORIES } from '@/lib/categories'
+import { cleanAmountInput, figure, parseAmount, pct } from '@/lib/format'
 import { apiErrorMessage } from '@/lib/api'
-import { Button, Card, ConfirmDeleteButton, EmptyState, Field, Input, ProgressBar, Select } from '@/components/ui'
+import {
+  Button,
+  CategoryChip,
+  ConfirmDeleteButton,
+  EmptyState,
+  Field,
+  Input,
+  PageHeader,
+  ProgressBar,
+  SectionHeading,
+  Select,
+  Stamp,
+} from '@/components/ui'
 import { MonthSwitcher } from '@/components/MonthSwitcher'
-import type { CategoryId } from '@/lib/types'
+import type { CategoryId, SavingsGoal } from '@/lib/types'
 
 export default function Budgets() {
-  const navigate = useNavigate()
   const [key, setKey] = useMonthParam()
+  const [params] = useSearchParams()
   const expenses = useWallet((s) => s.expenses)
   const budgets = useWallet((s) => s.settings.budgets)
   const setBudget = useWallet((s) => s.setBudget)
   const removeBudget = useWallet((s) => s.removeBudget)
   const savingsGoals = useWallet((s) => s.settings.savingsGoals)
   const addSavingsGoal = useWallet((s) => s.addSavingsGoal)
-  const updateSavingsGoal = useWallet((s) => s.updateSavingsGoal)
-  const deleteSavingsGoal = useWallet((s) => s.deleteSavingsGoal)
 
   const progress = useMemo(() => budgetProgress(expenses, budgets, key), [expenses, budgets, key])
-  const overall = progress.find((p) => p.category === 'overall')
-  const perCategory = progress.filter((p) => p.category !== 'overall')
+  const ordered = [...progress].sort((a, b) => (a.category === 'overall' ? -1 : b.category === 'overall' ? 1 : b.pct - a.pct))
 
+  const [showBudgetForm, setShowBudgetForm] = useState(false)
   const [newBudgetCategory, setNewBudgetCategory] = useState<CategoryId | 'overall'>('overall')
   const [newBudgetAmount, setNewBudgetAmount] = useState('')
-  const [showBudgetForm, setShowBudgetForm] = useState(false)
+  const [budgetError, setBudgetError] = useState('')
+  const [savingBudget, setSavingBudget] = useState(false)
 
   const [showGoalForm, setShowGoalForm] = useState(false)
   const [goalName, setGoalName] = useState('')
   const [goalTarget, setGoalTarget] = useState('')
-
-  const [budgetError, setBudgetError] = useState('')
   const [goalError, setGoalError] = useState('')
-  const [savingBudget, setSavingBudget] = useState(false)
   const [savingGoal, setSavingGoal] = useState(false)
 
-  const availableCategories = CATEGORIES.filter(
-    (c) => !budgets.some((b) => b.category === c.id),
-  )
+  const hasOverall = budgets.some((b) => b.category === 'overall')
+  const availableCategories = CATEGORIES.filter((c) => !budgets.some((b) => b.category === c.id))
+
+  useEffect(() => {
+    if (params.get('focus') === 'goals') document.getElementById('goals')?.scrollIntoView({ block: 'start' })
+  }, [params])
+
+  function openBudgetForm() {
+    setNewBudgetCategory(hasOverall ? availableCategories[0]?.id ?? 'overall' : 'overall')
+    setShowBudgetForm(true)
+  }
 
   async function handleAddBudget(e: React.FormEvent) {
     e.preventDefault()
-    const amount = Number(newBudgetAmount)
-    if (!amount || amount <= 0) return
+    const amount = parseAmount(newBudgetAmount)
+    if (amount === null) {
+      setBudgetError('Enter a monthly limit greater than 0')
+      return
+    }
     setSavingBudget(true)
     setBudgetError('')
     try {
@@ -64,12 +82,15 @@ export default function Budgets() {
 
   async function handleAddGoal(e: React.FormEvent) {
     e.preventDefault()
-    const target = Number(goalTarget)
-    if (!goalName.trim() || !target || target <= 0) return
+    const target = parseAmount(goalTarget)
+    if (!goalName.trim() || target === null) {
+      setGoalError('Give the goal a name and a target amount')
+      return
+    }
     setSavingGoal(true)
     setGoalError('')
     try {
-      await addSavingsGoal({ name: goalName, target, current: 0 })
+      await addSavingsGoal({ name: goalName.trim(), target, current: 0 })
       setGoalName('')
       setGoalTarget('')
       setShowGoalForm(false)
@@ -81,223 +102,222 @@ export default function Budgets() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            aria-label="Back"
-            className="hit flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-          >
-            <ArrowLeft className="h-4 w-4" strokeWidth={3} />
-          </button>
-          <h1 className="font-display text-2xl font-bold">Budgets &amp; goals</h1>
-        </div>
-        <MonthSwitcher value={key} onChange={setKey} />
-      </div>
+    <div className="flex flex-col gap-7">
+      <PageHeader back title="Budgets" action={<MonthSwitcher value={key} onChange={setKey} />} />
 
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold">Budgets</h2>
-          {!showBudgetForm && (
-            <Button size="sm" variant="secondary" onClick={() => setShowBudgetForm(true)}>
-              <Plus className="mr-1 h-4 w-4" strokeWidth={3} />
-              New budget
-            </Button>
-          )}
-        </div>
+      <section aria-labelledby="budgets-heading" className="flex flex-col gap-3">
+        <SectionHeading
+          id="budgets-heading"
+          title="Monthly limits"
+          className="mb-0"
+          action={
+            !showBudgetForm &&
+            (!hasOverall || availableCategories.length > 0) && (
+              <Button size="sm" variant="secondary" onClick={openBudgetForm}>
+                <Plus className="h-4 w-4" strokeWidth={2.75} />
+                New limit
+              </Button>
+            )
+          }
+        />
 
         {showBudgetForm && (
-          <Card padding="md" shadow="none" className="border-3 border-dashed">
-            <form onSubmit={handleAddBudget} className="flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Scope">
-                  <Select
-                    value={newBudgetCategory}
-                    onChange={(e) => setNewBudgetCategory(e.target.value as CategoryId | 'overall')}
-                  >
-                    {!budgets.some((b) => b.category === 'overall') && <option value="overall">Overall</option>}
-                    {availableCategories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="Monthly limit">
-                  <Input
-                    inputMode="decimal"
-                    value={newBudgetAmount}
-                    onChange={(e) => setNewBudgetAmount(e.target.value.replace(/[^0-9.]/g, ''))}
-                    placeholder="0.00"
-                  />
-                </Field>
-              </div>
-              {budgetError && <p className="text-sm font-bold text-alert">{budgetError}</p>}
-              <div className="flex gap-2">
-                <Button type="submit" className="flex-1" disabled={savingBudget}>
-                  {savingBudget ? 'Saving…' : 'Save budget'}
-                </Button>
-                <Button type="button" variant="secondary" onClick={() => setShowBudgetForm(false)} disabled={savingBudget}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </Card>
+          <form onSubmit={handleAddBudget} className="flex flex-col gap-3 rounded-md border-2 border-dashed border-ink/40 bg-paper p-4">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="For">
+                <Select value={newBudgetCategory} onChange={(e) => setNewBudgetCategory(e.target.value as CategoryId | 'overall')}>
+                  {!hasOverall && <option value="overall">All spending</option>}
+                  {availableCategories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="JD a month">
+                <Input
+                  inputMode="decimal"
+                  value={newBudgetAmount}
+                  onChange={(e) => setNewBudgetAmount(cleanAmountInput(e.target.value))}
+                  placeholder="0.00"
+                  className="font-mono"
+                  autoFocus
+                />
+              </Field>
+            </div>
+            {budgetError && (
+              <p role="alert" className="text-sm font-bold text-alert">
+                {budgetError}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1" disabled={savingBudget}>
+                {savingBudget ? 'Saving…' : 'Save limit'}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setShowBudgetForm(false)} disabled={savingBudget}>
+                Cancel
+              </Button>
+            </div>
+          </form>
         )}
 
-        {overall && <BudgetRow label="Overall" progress={overall} onRemove={() => removeBudget('overall')} />}
-
-        {perCategory.length === 0 && !overall ? (
-          <EmptyState
-            icon={<Target className="h-10 w-10" strokeWidth={1.75} />}
-            title="No budgets set"
-            message="Set an overall limit or per-category caps to see progress here."
-          />
+        {ordered.length === 0 ? (
+          !showBudgetForm && (
+            <EmptyState
+              title="No limits set"
+              message="Set one for all spending, or cap a category like food or fun. Ledger stamps it when you get close."
+            />
+          )
         ) : (
-          perCategory.map((p) => {
-            const cat = getCategory(p.category as CategoryId)
-            return (
-              <BudgetRow
-                key={p.category}
-                label={cat.label}
-                icon={<CategoryIcon name={cat.icon} className={`h-4 w-4 ${cat.textOn === 'paper' ? 'text-paper' : 'text-ink'}`} />}
-                iconBg={cat.hex}
-                progress={p}
-                onRemove={() => removeBudget(p.category)}
-              />
-            )
-          })
+          <div className="flex flex-col divide-y-2 divide-rule rounded-md border-2 bg-paper">
+            {ordered.map((p) => (
+              <BudgetRow key={p.category} progress={p} onRemove={() => removeBudget(p.category)} />
+            ))}
+          </div>
         )}
-      </div>
+      </section>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold">Savings goals</h2>
-          {!showGoalForm && (
-            <Button size="sm" variant="secondary" onClick={() => setShowGoalForm(true)}>
-              <Plus className="mr-1 h-4 w-4" strokeWidth={3} />
-              New goal
-            </Button>
-          )}
-        </div>
+      <section id="goals" aria-labelledby="goals-heading" className="flex scroll-mt-6 flex-col gap-3">
+        <SectionHeading
+          id="goals-heading"
+          title="Savings goals"
+          className="mb-0"
+          action={
+            !showGoalForm && (
+              <Button size="sm" variant="secondary" onClick={() => setShowGoalForm(true)}>
+                <Plus className="h-4 w-4" strokeWidth={2.75} />
+                New goal
+              </Button>
+            )
+          }
+        />
 
         {showGoalForm && (
-          <Card padding="md" shadow="none" className="border-3 border-dashed">
-            <form onSubmit={handleAddGoal} className="flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Goal name">
-                  <Input value={goalName} onChange={(e) => setGoalName(e.target.value)} placeholder="Emergency fund" />
-                </Field>
-                <Field label="Target">
-                  <Input
-                    inputMode="decimal"
-                    value={goalTarget}
-                    onChange={(e) => setGoalTarget(e.target.value.replace(/[^0-9.]/g, ''))}
-                    placeholder="0.00"
-                  />
-                </Field>
-              </div>
-              {goalError && <p className="text-sm font-bold text-alert">{goalError}</p>}
-              <div className="flex gap-2">
-                <Button type="submit" className="flex-1" disabled={savingGoal}>
-                  {savingGoal ? 'Creating…' : 'Create goal'}
-                </Button>
-                <Button type="button" variant="secondary" onClick={() => setShowGoalForm(false)} disabled={savingGoal}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </Card>
+          <form onSubmit={handleAddGoal} className="flex flex-col gap-3 rounded-md border-2 border-dashed border-ink/40 bg-paper p-4">
+            <div className="grid grid-cols-[1fr_7.5rem] gap-3">
+              <Field label="Saving for">
+                <Input value={goalName} onChange={(e) => setGoalName(e.target.value)} placeholder="Emergency fund" autoFocus />
+              </Field>
+              <Field label="Target JD">
+                <Input
+                  inputMode="decimal"
+                  value={goalTarget}
+                  onChange={(e) => setGoalTarget(cleanAmountInput(e.target.value))}
+                  placeholder="0.00"
+                  className="font-mono"
+                />
+              </Field>
+            </div>
+            {goalError && (
+              <p role="alert" className="text-sm font-bold text-alert">
+                {goalError}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1" disabled={savingGoal}>
+                {savingGoal ? 'Creating…' : 'Create goal'}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setShowGoalForm(false)} disabled={savingGoal}>
+                Cancel
+              </Button>
+            </div>
+          </form>
         )}
 
-        {savingsGoals.length === 0 ? (
-          <EmptyState
-            icon={<PiggyBank className="h-10 w-10" strokeWidth={1.75} />}
-            title="No savings goals yet"
-            message="Set a target like an emergency fund and track progress toward it."
-          />
-        ) : (
-          savingsGoals.map((g) => {
-            const p = g.target > 0 ? (g.current / g.target) * 100 : 0
-            return (
-              <Card key={g.id} padding="md">
-                <div className="flex items-center justify-between">
-                  <p className="font-display font-bold">{g.name}</p>
-                  <ConfirmDeleteButton label={`Delete ${g.name}`} onConfirm={() => deleteSavingsGoal(g.id)} />
-                </div>
-                <div className="mt-1 flex items-baseline justify-between">
-                  <span className="tnum text-sm font-bold text-ink/60">
-                    {money(g.current)} of {money(g.target)}
-                  </span>
-                  <span className="tnum text-sm font-bold">{pct(Math.min(100, p))}</span>
-                </div>
-                <ProgressBar pct={p} state="ok" className="mt-2" />
-                <div className="mt-3 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => updateSavingsGoal(g.id, { current: g.current + 50 })}
-                    className="rounded border-2 border-ink px-2.5 py-1 text-xs font-bold hover:bg-canvas"
-                  >
-                    +$50
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateSavingsGoal(g.id, { current: Math.max(0, g.current - 50) })}
-                    className="rounded border-2 border-ink px-2.5 py-1 text-xs font-bold hover:bg-canvas"
-                  >
-                    -$50
-                  </button>
-                </div>
-              </Card>
+        {savingsGoals.length === 0
+          ? !showGoalForm && (
+              <EmptyState title="No savings goals yet" message="Name something you’re saving for and log money toward it as you put it aside." />
             )
-          })
-        )}
-      </div>
+          : savingsGoals.map((g) => <GoalCard key={g.id} goal={g} />)}
+      </section>
     </div>
   )
 }
 
-function BudgetRow({
-  label,
-  icon,
-  iconBg,
-  progress,
-  onRemove,
-}: {
-  label: string
-  icon?: React.ReactNode
-  iconBg?: string
-  progress: { spent: number; budget: number; pct: number; state: 'ok' | 'warning' | 'over' }
-  onRemove: () => void
-}) {
+function BudgetRow({ progress, onRemove }: { progress: BudgetProgress; onRemove: () => void }) {
+  const left = progress.budget - progress.spent
   return (
-    <Card padding="md" shadow={progress.state === 'over' ? 'alert' : 'ink'}>
+    <div className="flex flex-col gap-2 px-3.5 py-3.5">
       <div className="flex items-center gap-3">
-        {icon && (
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded border-2" style={{ backgroundColor: iconBg }}>
-            {icon}
-          </div>
-        )}
+        {progress.category !== 'overall' && <CategoryChip category={progress.category} />}
         <div className="min-w-0 flex-1">
-          <p className="truncate font-display font-bold">{label}</p>
-          <p className="tnum text-sm font-bold text-ink/60">
-            {money(progress.spent)} of {money(progress.budget)}
+          <p className="truncate font-bold">{progress.category === 'overall' ? 'All spending' : progress.label}</p>
+          <p className="tnum text-sm font-medium text-ink/60">
+            <span className="font-mono font-semibold text-ink">{figure(progress.spent)}</span> of {figure(progress.budget)} JD ·{' '}
+            {left >= 0 ? `${figure(left)} left` : `${pct(progress.pct - 100)} over`}
           </p>
         </div>
-        <ConfirmDeleteButton label={`Remove ${label} budget`} onConfirm={onRemove} />
+        {progress.state !== 'ok' && (
+          <Stamp tone={progress.state === 'over' ? 'red' : 'blue'}>{progress.state === 'over' ? 'Over' : 'Close'}</Stamp>
+        )}
+        <ConfirmDeleteButton label={`Remove ${progress.label}`} onConfirm={onRemove} />
       </div>
-      <ProgressBar pct={progress.pct} state={progress.state} className="mt-2" />
-      {progress.state === 'over' && (
-        <p className="mt-1.5 text-xs font-bold text-alert">
-          {pct(progress.pct - 100)} over budget
-        </p>
-      )}
-      {progress.state === 'warning' && (
-        <p className="mt-1.5 text-xs font-bold text-ink/60">Close to your limit</p>
-      )}
-    </Card>
+      <ProgressBar pct={progress.pct} state={progress.state} label={`${progress.label} used`} />
+    </div>
   )
 }
 
+function GoalCard({ goal }: { goal: SavingsGoal }) {
+  const updateSavingsGoal = useWallet((s) => s.updateSavingsGoal)
+  const deleteSavingsGoal = useWallet((s) => s.deleteSavingsGoal)
+  const [amount, setAmount] = useState('')
+  const [busy, setBusy] = useState(false)
+  const value = parseAmount(amount)
+  const p = goal.target > 0 ? (goal.current / goal.target) * 100 : 0
+
+  async function move(direction: 1 | -1) {
+    if (value === null) return
+    setBusy(true)
+    try {
+      await updateSavingsGoal(goal.id, { current: Math.max(0, goal.current + direction * value) })
+      setAmount('')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-md border-2 bg-paper p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-bold">{goal.name}</p>
+          <p className="tnum text-sm font-medium text-ink/60">
+            <span className="font-mono font-semibold text-ink">{figure(goal.current)}</span> of {figure(goal.target)} JD
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {p >= 100 ? <Stamp tone="green">Reached</Stamp> : <span className="tnum text-sm font-bold">{pct(p)}</span>}
+          <ConfirmDeleteButton label={`Delete ${goal.name}`} onConfirm={() => deleteSavingsGoal(goal.id)} />
+        </div>
+      </div>
+      <ProgressBar pct={p} state="ok" label={`${goal.name} progress`} />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          move(1)
+        }}
+        className="flex gap-2"
+      >
+        <div className="relative flex-1">
+          <span aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-ink/60">
+            JD
+          </span>
+          <Input
+            aria-label={`Amount for ${goal.name}`}
+            inputMode="decimal"
+            placeholder="0.00"
+            value={amount}
+            onChange={(e) => setAmount(cleanAmountInput(e.target.value))}
+            className="pl-10 font-mono"
+          />
+        </div>
+        <Button type="submit" size="sm" variant="secondary" disabled={value === null || busy} className="min-h-11">
+          Put in
+        </Button>
+        <Button type="button" size="sm" variant="ghost" disabled={value === null || busy} onClick={() => move(-1)} className="min-h-11">
+          Take out
+        </Button>
+      </form>
+    </div>
+  )
+}

@@ -6,30 +6,33 @@ import { cx } from './ui'
 export function CategoryPicker({
   value,
   onChange,
+  label = 'Category',
 }: {
   value: CategoryId
   onChange: (id: CategoryId) => void
+  label?: string
 }) {
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div role="radiogroup" aria-label={label} className="grid grid-cols-4 gap-2">
       {CATEGORIES.map((cat) => {
         const active = cat.id === value
         return (
           <button
             key={cat.id}
             type="button"
-            onClick={() => onChange(cat.id)}
-            aria-pressed={active}
+            role="radio"
+            aria-checked={active}
             aria-label={cat.label}
+            onClick={() => onChange(cat.id)}
             className={cx(
-              'flex min-w-0 flex-col items-center gap-1.5 rounded border-3 px-1 py-3 transition-transform duration-75 active:translate-x-[1px] active:translate-y-[1px]',
-              active ? 'shadow-none translate-x-[2px] translate-y-[2px]' : 'shadow-brut-sm',
+              'flex min-h-[68px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-md border-2 px-1 py-2.5 transition-[transform,box-shadow,background-color] duration-75',
+              active ? 'border-3 shadow-brut-sm' : 'bg-paper hover:bg-canvas/60',
             )}
-            style={{ backgroundColor: active ? cat.hex : '#FFFFFF' }}
+            style={active ? { backgroundColor: cat.hex } : undefined}
           >
             <CategoryIcon
               name={cat.icon}
-              className={cx('h-6 w-6', active && cat.textOn === 'paper' ? 'text-paper' : 'text-ink')}
+              className={cx('h-5 w-5', active && cat.textOn === 'paper' ? 'text-paper' : 'text-ink')}
             />
             <span
               className={cx(

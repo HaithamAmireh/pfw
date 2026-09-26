@@ -1,11 +1,54 @@
 {
   "version": 1,
   "skills": {
+    "design-taste-frontend": {
+      "source": "skills.sh",
+      "sourceUrl": "https://skills.sh/p/X6fnJKBZneaest0O",
+      "sourceType": "well-known",
+      "computedHash": "6d838b246d0e35d0b53f4f23f98ba7a1dd561937e64f7d0c7553b0928e376c3e",
+      "wellKnownDigest": "sha256:32134157d57314d41e794e71014c853b24f16f20e396944e47ccc76f96fa01b0"
+    },
     "frontend-design": {
-      "source": "anthropics/skills",
-      "sourceType": "github",
-      "skillPath": "skills/frontend-design/SKILL.md",
-      "computedHash": "89496d5dd00f4810205f351759594fc2742bf8eea85a2f2b2d1de59f4bd91576"
+      "source": "skills.sh",
+      "sourceUrl": "https://skills.sh/p/X6fnJKBZneaest0O",
+      "sourceType": "well-known",
+      "computedHash": "89496d5dd00f4810205f351759594fc2742bf8eea85a2f2b2d1de59f4bd91576",
+      "wellKnownDigest": "sha256:7e9c2af00fd5b3144f49ce6fb1b16037b392ab9c2f049423b0b6114d99381ba2"
+    },
+    "frontend-patterns": {
+      "source": "skills.sh",
+      "sourceUrl": "https://skills.sh/p/X6fnJKBZneaest0O",
+      "sourceType": "well-known",
+      "computedHash": "cda7d74619e78bc6c58e7f7f4fa7a9d831ec71ae4629550e4d7b53876692e4d3",
+      "wellKnownDigest": "sha256:a5ecb8615d4af5f0333b83f2e3a7a77245f8a5e90fc681a6715f6f1271c3f444"
+    },
+    "frontend-ui-engineering": {
+      "source": "skills.sh",
+      "sourceUrl": "https://skills.sh/p/X6fnJKBZneaest0O",
+      "sourceType": "well-known",
+      "computedHash": "caada020b47fb51c68ba91f9bf390745e18f9d6c17e4c251b046ba74e43343d7",
+      "wellKnownDigest": "sha256:812aeb8839062d150e80c1b4f19c9ae0c569122c9f4da2467048cd936b0aabbf"
+    },
+    "hyperframes-animation": {
+      "source": "skills.sh",
+      "sourceUrl": "https://skills.sh/p/X6fnJKBZneaest0O",
+      "sourceType": "well-known",
+      "computedHash": "eb024940df1bb76d314abd28958c27aa04ef96a8aca8338ca5ed44759c5fdb14",
+      "wellKnownDigest": "sha256:31d6e3cb9be4e2402ea629456427843497b5371872a1f35f3cf6d6c94814c16e"
+    },
+    "imagegen-frontend-mobile": {
+      "source": "skills.sh",
+      "sourceUrl": "https://skills.sh/p/X6fnJKBZneaest0O",
+      "sourceType": "well-known",
+      "computedHash": "9ab7f4f6ce66a3cff02bbf5894e5bd5af50bf5d6ef0adffdc88e8fab772fe44f",
+      "wellKnownDigest": "sha256:9d08a2fd4f71d9fa9f6808506fed4a8231ab451e2016570ab80514074571c64a"
+    },
+    "impeccable": {
+      "source": "skills.sh",
+      "sourceUrl": "https://skills.sh/p/X6fnJKBZneaest0O",
+      "sourceType": "well-known",
+      "computedHash": "8eea5bcd84c119537011945652fafa52e840bc4df9a6847dd9f2452089355492",
+      "wellKnownDigest": "sha256:32add4aa5e1e9df283ce14b0b6ce759caf26c1385b805c816a8c9a83acaf9da2"
     },
     "sleek-design-mobile-apps": {
       "source": "sleekdotdesign/agent-skills",
@@ -14,10 +57,11 @@
       "computedHash": "1e7a933ac86d075fb82d28067bb5f6c148b480028f726a1906f4ecb9d55717a5"
     },
     "web-design-guidelines": {
-      "source": "vercel-labs/agent-skills",
-      "sourceType": "github",
-      "skillPath": "skills/web-design-guidelines/SKILL.md",
-      "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+      "source": "skills.sh",
+      "sourceUrl": "https://skills.sh/p/X6fnJKBZneaest0O",
+      "sourceType": "well-known",
+      "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a",
+      "wellKnownDigest": "sha256:f3bc47f890f42a44db1007ab390709ec368e4b8c089baee6b0007182236ac474"
     }
   }
 }

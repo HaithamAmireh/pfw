@@ -1,4 +1,4 @@
-import type { Category, CategoryId } from './types'
+import type { Category, CategoryId, PaymentMethod } from './types'
 
 export const CATEGORIES: Category[] = [
   { id: 'housing', label: 'Housing', icon: 'Home', color: 'cat-housing', hex: '#3D5AFE', textOn: 'paper', group: 'essential' },
@@ -31,3 +31,11 @@ export const GROUP_COLORS: Record<Category['group'], string> = {
   subscription: '#8338EC',
   discretionary: '#FF9F1C',
 }
+
+export const PAYMENT_METHODS: { id: PaymentMethod; label: string }[] = [
+  { id: 'card', label: 'Card' },
+  { id: 'cash', label: 'Cash' },
+  { id: 'cliq', label: 'CliQ' },
+  { id: 'bank_transfer', label: 'Bank transfer' },
+  { id: 'other', label: 'Other' },
+]

@@ -18,8 +18,8 @@
 
   body {
     @apply bg-canvas text-ink font-display antialiased;
-    background-image: radial-gradient(circle, #d8d4c4 1px, transparent 1px);
-    background-size: 22px 22px;
+    caret-color: #ff7a00;
+    scrollbar-color: #15130f33 transparent;
   }
 
   h1,
@@ -37,6 +37,10 @@
     @apply bg-volt text-ink;
   }
 
+  a {
+    text-underline-offset: 3px;
+  }
+
   :focus-visible {
     outline: 3px solid #15130f;
     outline-offset: 2px;
@@ -52,6 +56,14 @@
   /* tabular figures everywhere money shows up */
   .tnum {
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Archivo's width axis: wide cut for headings and headline totals */
+  .font-wide {
+    font-stretch: 125%;
+  }
+  .font-semiwide {
+    font-stretch: 112%;
   }
 }
 
@@ -74,6 +86,13 @@
   .scrollbar-none {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+}
+
+@layer components {
+  /* Passbook ruling: the ledger's rows sit on hairlines, its header on a double rule */
+  .ledger-head {
+    border-bottom: 3px double #15130f;
   }
 }
 

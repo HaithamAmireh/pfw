@@ -308,3 +308,33 @@ export function affordability(opts: {
     verdict,
   }
 }
+
+// ---------------------------------------------------------------------------
+// Passbook — the month as a running balance. Income is brought forward on the
+// 1st, and every expense, oldest first, lowers the balance.
+// ---------------------------------------------------------------------------
+
+export interface LedgerEntry {
+  expense: Expense
+  balance: number // balance after this entry
+}
+
+export function monthLedger(expenses: Expense[], income: number, key: string): LedgerEntry[] {
+  const monthly = [...expensesForMonth(expenses, key)].sort(
+    (a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt),
+  )
+  let balance = income
+  return monthly.map((expense) => {
+    balance -= expense.amount
+    return { expense, balance }
+  })
+}
+
+// How the month is heading, as a single word for the Home stamp.
+export type MonthOutlook = 'on-track' | 'tight' | 'overdrawn'
+
+export function monthOutlook(projectedLeftover: number, income: number): MonthOutlook {
+  if (projectedLeftover < 0) return 'overdrawn'
+  if (income > 0 && (projectedLeftover / income) * 100 < HEALTHY_SAVINGS_RATE) return 'tight'
+  return 'on-track'
+}

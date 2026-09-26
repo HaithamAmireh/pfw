@@ -265,21 +265,11 @@ All routes are mounted under `/api`. Everything except `/api/auth/*` requires th
 
 ## Design system
 
-Neo-brutalism, deliberately: thick ink borders (2–4px), flat saturated fills, hard offset drop-shadows (no blur, no gradients), minimal border radius, and buttons that visibly "press" (shadow collapses, position shifts) instead of fading on hover.
+**Brutalist passbook.** The month reads like a bank passbook: income is brought forward on the 1st and every entry lowers a running balance. Drafts ("Can I afford it?", shopping items) are pencilled in and inked when bought, and state is shown with rubber stamps. The look is disciplined neo-brutalism: ink rules, one orange (`volt #FF7A00`), and a hard offset shadow only on the one surface per screen that matters.
 
-| Token | Value | Use |
-|---|---|---|
-| `ink` | `#15130F` | borders, text, shadows |
-| `paper` | `#FFFFFF` | card surfaces |
-| `canvas` | `#EEEBE1` | page background |
-| `volt` | `#FFD400` | primary actions, brand accent |
-| `cash` | `#00B86B` | positive/under-budget |
-| `alert` | `#FF4D4D` | destructive/over-budget |
-| category hues | 8 distinct flat colors | one per expense category (`tailwind.config.js` → `theme.colors.cat`) |
+Typography: **Archivo** (variable width; wide cut for titles and totals) with **Spline Sans Mono** for ledger figures. Amounts are in Jordanian dinars (JD).
 
-Typography: **Space Grotesk** (display/headlines/big numbers) + **JetBrains Mono** (tabular figures, data labels) — no default AI-generated-page tells (no warm-cream-and-serif, no all-caps labels, no em-dash eyebrow chrome).
-
-Full token system lives in `tailwind.config.js` and `src/index.css`.
+Full tokens, components, motion and copy rules live in [`DESIGN.md`](./DESIGN.md).
 
 ---
 
