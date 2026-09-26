@@ -13,6 +13,7 @@ import SettingsPage from '@/pages/Settings'
 import Recurring from '@/pages/Recurring'
 import Budgets from '@/pages/Budgets'
 import Shopping from '@/pages/Shopping'
+import Afford from '@/pages/Afford'
 
 function LoadingScreen({ label }: { label: string }) {
   return (
@@ -71,6 +72,7 @@ export default function App() {
           <Route path="/recurring" element={<Recurring />} />
           <Route path="/budgets" element={<Budgets />} />
           <Route path="/shopping" element={<Shopping />} />
+          <Route path="/afford" element={<Afford />} />
         </Route>
       </Routes>
     </HashRouter>

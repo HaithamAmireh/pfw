@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronRight, Download, LogOut, Repeat, ShoppingCart, Target, User, Wallet } from 'lucide-react'
+import { ChevronRight, CircleHelp, Download, LogOut, Repeat, ShoppingCart, Target, User, Wallet } from 'lucide-react'
 import { useWallet } from '@/lib/store'
 import { useAuth } from '@/lib/authStore'
 import { apiErrorMessage } from '@/lib/api'
@@ -71,6 +71,7 @@ export default function SettingsPage() {
       </Card>
 
       <div className="flex flex-col gap-3">
+        <NavCard to="/afford" icon={<CircleHelp className="h-5 w-5" strokeWidth={2.5} />} title="Can I afford it?" desc="Check a purchase against the rest of this month" />
         <NavCard to="/shopping" icon={<ShoppingCart className="h-5 w-5" strokeWidth={2.5} />} title="Shopping list" desc="Track what to buy, check items off, and log the price" />
         <NavCard to="/recurring" icon={<Repeat className="h-5 w-5" strokeWidth={2.5} />} title="Recurring bills" desc="Manage rent, subscriptions, and fixed monthly costs" />
         <NavCard to="/budgets" icon={<Target className="h-5 w-5" strokeWidth={2.5} />} title="Budgets & goals" desc="Set spending limits and savings targets" />

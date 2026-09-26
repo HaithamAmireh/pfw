@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowDownRight, ArrowUpRight, Flame, PiggyBank, Repeat, ShoppingCart, Trophy } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, ChevronRight, CircleHelp, Flame, PiggyBank, Repeat, ShoppingCart, Trophy } from 'lucide-react'
 import { useWallet } from '@/lib/store'
 import { useMonthParam } from '@/lib/useMonthParam'
 import {
@@ -178,6 +178,19 @@ export default function Dashboard() {
           </Card>
         )}
       </div>
+
+      <Link to="/afford">
+        <Card padding="md" className="flex items-center gap-3 transition-transform active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded border-3 bg-volt shadow-brut-sm">
+            <CircleHelp className="h-5 w-5 text-ink" strokeWidth={2.5} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-display font-bold">Can I afford it?</p>
+            <p className="truncate text-sm text-ink/55">Check a purchase against the rest of this month</p>
+          </div>
+          <ChevronRight className="h-5 w-5 shrink-0 text-ink/40" strokeWidth={2.5} />
+        </Card>
+      </Link>
 
       <div className="flex gap-3">
         <Link to="/shopping" className="flex-1">

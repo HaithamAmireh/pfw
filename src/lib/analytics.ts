@@ -184,3 +184,119 @@ export function budgetProgress(
 export function recurringMonthlyTotal(recurring: RecurringExpense[]): number {
   return recurring.filter((r) => r.active).reduce((sum, r) => sum + r.amount, 0)
 }
+
+// ---------------------------------------------------------------------------
+// Affordability — "can I buy this?" check against the rest of the month.
+// Projects month-end leftover as: income − spent so far − recurring bills not
+// yet generated − expected everyday spending for the days remaining, then
+// sees what a purchase of `price` does to that.
+// ---------------------------------------------------------------------------
+
+export const HEALTHY_SAVINGS_RATE = 20
+
+export interface BudgetImpact {
+  label: string
+  spent: number
+  budget: number
+  after: number
+  over: boolean
+}
+
+export interface Affordability {
+  income: number
+  spent: number
+  pendingRecurring: number
+  dailyPace: number
+  paceSource: 'history' | 'this-month' | 'none'
+  daysLeft: number
+  expectedRemaining: number
+  projectedLeftover: number
+  leftoverAfter: number
+  savingsRateAfter: number
+  budgetImpacts: BudgetImpact[]
+  verdict: 'yes' | 'tight' | 'no'
+}
+
+// Average non-recurring spend per day, from the last few months that have any
+// data. Recurring bills are excluded since they're accounted for separately.
+function historicalDailyPace(expenses: Expense[], key: string, months = 3): number | null {
+  const paces: number[] = []
+  for (let i = 1; i <= 6 && paces.length < months; i++) {
+    const k = shiftMonthKey(key, -i)
+    const monthly = expensesForMonth(expenses, k)
+    if (monthly.length === 0) continue
+    const discretionary = monthly.filter((e) => !e.isRecurring).reduce((s, e) => s + e.amount, 0)
+    paces.push(discretionary / daysInMonthKey(k))
+  }
+  if (paces.length === 0) return null
+  return paces.reduce((s, p) => s + p, 0) / paces.length
+}
+
+export function affordability(opts: {
+  price: number
+  category: CategoryId
+  income: number
+  expenses: Expense[]
+  recurring: RecurringExpense[]
+  budgets: Budget[]
+  key: string // current month
+  today: number // day of month
+}): Affordability {
+  const { price, category, income, expenses, recurring, budgets, key, today } = opts
+  const monthly = expensesForMonth(expenses, key)
+  const spent = monthly.reduce((s, e) => s + e.amount, 0)
+
+  const generated = new Set(monthly.map((e) => e.recurringId).filter(Boolean))
+  const pendingRecurring = recurring
+    .filter((r) => r.active && !generated.has(r.id))
+    .reduce((s, r) => s + r.amount, 0)
+
+  const daysLeft = daysInMonthKey(key) - today
+  const history = historicalDailyPace(expenses, key)
+  const thisMonthDiscretionary = monthly.filter((e) => !e.isRecurring).reduce((s, e) => s + e.amount, 0)
+  let dailyPace = 0
+  let paceSource: Affordability['paceSource'] = 'none'
+  if (history !== null) {
+    dailyPace = history
+    paceSource = 'history'
+  } else if (thisMonthDiscretionary > 0) {
+    dailyPace = thisMonthDiscretionary / today
+    paceSource = 'this-month'
+  }
+  const expectedRemaining = dailyPace * daysLeft
+
+  const projectedLeftover = income - spent - pendingRecurring - expectedRemaining
+  const leftoverAfter = projectedLeftover - price
+  const savingsRateAfter = income > 0 ? (leftoverAfter / income) * 100 : 0
+
+  const categorySpent = monthly.filter((e) => e.category === category).reduce((s, e) => s + e.amount, 0)
+  const budgetImpacts: BudgetImpact[] = budgets
+    .filter((b) => b.category === 'overall' || b.category === category)
+    .map((b) => {
+      const s = b.category === 'overall' ? spent : categorySpent
+      const label = b.category === 'overall' ? 'Overall budget' : `${getCategory(b.category).label} budget`
+      return { label, spent: s, budget: b.amount, after: s + price, over: s + price > b.amount }
+    })
+
+  const verdict: Affordability['verdict'] =
+    leftoverAfter < 0
+      ? 'no'
+      : savingsRateAfter < HEALTHY_SAVINGS_RATE || budgetImpacts.some((b) => b.over)
+        ? 'tight'
+        : 'yes'
+
+  return {
+    income,
+    spent,
+    pendingRecurring,
+    dailyPace,
+    paceSource,
+    daysLeft,
+    expectedRemaining,
+    projectedLeftover,
+    leftoverAfter,
+    savingsRateAfter,
+    budgetImpacts,
+    verdict,
+  }
+}
