@@ -82,13 +82,13 @@ export default function Budgets() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => navigate(-1)}
             aria-label="Back"
-            className="flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+            className="hit flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
           >
             <ArrowLeft className="h-4 w-4" strokeWidth={3} />
           </button>
@@ -281,12 +281,10 @@ function BudgetRow({
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-display font-bold">{label}</span>
-            <span className="tnum text-sm font-bold text-ink/60">
-              {money(progress.spent)} / {money(progress.budget)}
-            </span>
-          </div>
+          <p className="truncate font-display font-bold">{label}</p>
+          <p className="tnum text-sm font-bold text-ink/60">
+            {money(progress.spent)} of {money(progress.budget)}
+          </p>
         </div>
         <ConfirmDeleteButton label={`Remove ${label} budget`} onConfirm={onRemove} />
       </div>

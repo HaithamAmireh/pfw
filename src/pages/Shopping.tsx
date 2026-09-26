@@ -52,7 +52,7 @@ export default function Shopping() {
           type="button"
           onClick={() => navigate(-1)}
           aria-label="Back"
-          className="flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+          className="hit flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={3} />
         </button>
@@ -93,7 +93,7 @@ export default function Shopping() {
                   type="button"
                   aria-label={`Check off ${item.name}`}
                   onClick={() => setCheckingId(item.id)}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded border-3 border-ink bg-paper"
+                  className="hit flex h-8 w-8 shrink-0 items-center justify-center rounded border-3 border-ink bg-paper"
                 />
                 <p className="min-w-0 flex-1 truncate font-display font-bold">{item.name}</p>
                 <ConfirmDeleteButton label={`Delete ${item.name}`} onConfirm={() => deleteShoppingItem(item.id)} />
@@ -117,7 +117,7 @@ export default function Shopping() {
                       type="button"
                       aria-label={`Undo ${item.name}`}
                       onClick={() => uncheckShoppingItem(item.id)}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded border-2 border-ink/30 text-ink/60 hover:border-ink hover:text-ink"
+                      className="hit flex h-8 w-8 shrink-0 items-center justify-center rounded border-2 border-ink/30 text-ink/60 hover:border-ink hover:text-ink"
                     >
                       <Undo2 className="h-3.5 w-3.5" strokeWidth={2.5} />
                     </button>

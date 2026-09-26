@@ -89,7 +89,7 @@ export default function Afford() {
           type="button"
           onClick={() => navigate(-1)}
           aria-label="Back"
-          className="flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+          className="hit flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={3} />
         </button>
@@ -220,10 +220,12 @@ function explain(r: ReturnType<typeof affordability>, price: number): string {
     const short = Math.abs(r.leftoverAfter)
     return `At your usual pace you’d end the month ${money(short)} short. Waiting until next month is the safer call.`
   }
-  const overBudgets = r.budgetImpacts.filter((b) => b.over).map((b) => b.label.toLowerCase())
   if (r.verdict === 'tight') {
     const reasons: string[] = []
-    if (overBudgets.length > 0) reasons.push(`it pushes you over your ${overBudgets.join(' and ')}`)
+    const pushedOver = r.budgetImpacts.filter((b) => b.over && b.spent <= b.budget).map((b) => b.label.toLowerCase())
+    const alreadyOver = r.budgetImpacts.filter((b) => b.spent > b.budget).map((b) => b.label.toLowerCase())
+    if (pushedOver.length > 0) reasons.push(`it pushes you over your ${pushedOver.join(' and ')}`)
+    if (alreadyOver.length > 0) reasons.push(`you’re already over your ${alreadyOver.join(' and ')}`)
     if (r.savingsRateAfter < HEALTHY_SAVINGS_RATE)
       reasons.push(`you’d only save ${r.savingsRateAfter.toFixed(0)}% of your income this month`)
     return `You won’t run out of money, but ${reasons.join(', and ')}.`

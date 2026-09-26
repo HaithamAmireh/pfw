@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { monthKey, monthLabel, shiftMonthKey } from '@/lib/date'
+import { monthKey, monthLabel, shiftMonthKey, shortMonthLabel } from '@/lib/date'
 
 export function MonthSwitcher({
   value,
@@ -15,19 +15,22 @@ export function MonthSwitcher({
         type="button"
         aria-label="Previous month"
         onClick={() => onChange(shiftMonthKey(value, -1))}
-        className="flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+        className="hit flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
       >
         <ChevronLeft className="h-4 w-4" strokeWidth={3} />
       </button>
-      <span className="min-w-[9.5rem] text-center font-display text-sm font-bold">
-        {monthLabel(value)}
+      <span className="min-w-[5.5rem] text-center font-display text-sm font-bold sm:min-w-[9.5rem]" aria-live="polite">
+        <span className="sm:hidden">
+          {shortMonthLabel(value)} {value.slice(0, 4)}
+        </span>
+        <span className="hidden sm:inline">{monthLabel(value)}</span>
       </span>
       <button
         type="button"
         aria-label="Next month"
         disabled={isCurrent}
         onClick={() => onChange(shiftMonthKey(value, 1))}
-        className="flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-30"
+        className="hit flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-30"
       >
         <ChevronRight className="h-4 w-4" strokeWidth={3} />
       </button>

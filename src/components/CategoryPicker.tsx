@@ -20,8 +20,9 @@ export function CategoryPicker({
             type="button"
             onClick={() => onChange(cat.id)}
             aria-pressed={active}
+            aria-label={cat.label}
             className={cx(
-              'flex flex-col items-center gap-1.5 rounded border-3 px-2 py-3 transition-transform duration-75 active:translate-x-[1px] active:translate-y-[1px]',
+              'flex min-w-0 flex-col items-center gap-1.5 rounded border-3 px-1 py-3 transition-transform duration-75 active:translate-x-[1px] active:translate-y-[1px]',
               active ? 'shadow-none translate-x-[2px] translate-y-[2px]' : 'shadow-brut-sm',
             )}
             style={{ backgroundColor: active ? cat.hex : '#FFFFFF' }}
@@ -32,11 +33,12 @@ export function CategoryPicker({
             />
             <span
               className={cx(
-                'text-center text-xs font-bold leading-tight',
+                'w-full truncate text-center text-xs font-bold leading-tight',
                 active && cat.textOn === 'paper' ? 'text-paper' : 'text-ink',
               )}
             >
-              {cat.label}
+              <span className="sm:hidden">{cat.shortLabel ?? cat.label}</span>
+              <span className="hidden sm:inline">{cat.label}</span>
             </span>
           </button>
         )

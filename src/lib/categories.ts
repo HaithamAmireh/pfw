@@ -4,10 +4,10 @@ export const CATEGORIES: Category[] = [
   { id: 'housing', label: 'Housing', icon: 'Home', color: 'cat-housing', hex: '#3D5AFE', textOn: 'paper', group: 'essential' },
   { id: 'food', label: 'Food', icon: 'UtensilsCrossed', color: 'cat-food', hex: '#FF9F1C', textOn: 'ink', group: 'essential' },
   { id: 'transport', label: 'Transport', icon: 'Car', color: 'cat-transport', hex: '#06B6D4', textOn: 'ink', group: 'essential' },
-  { id: 'subscription', label: 'Subscriptions', icon: 'Repeat', color: 'cat-subscription', hex: '#8338EC', textOn: 'paper', group: 'subscription' },
+  { id: 'subscription', label: 'Subscriptions', shortLabel: 'Subs', icon: 'Repeat', color: 'cat-subscription', hex: '#8338EC', textOn: 'paper', group: 'subscription' },
   { id: 'utilities', label: 'Utilities', icon: 'Zap', color: 'cat-utilities', hex: '#FF5DA2', textOn: 'ink', group: 'essential' },
   { id: 'debt', label: 'Debt', icon: 'CreditCard', color: 'cat-debt', hex: '#FF4D4D', textOn: 'paper', group: 'essential' },
-  { id: 'entertainment', label: 'Entertainment', icon: 'PartyPopper', color: 'cat-entertainment', hex: '#FFD400', textOn: 'ink', group: 'discretionary' },
+  { id: 'entertainment', label: 'Entertainment', shortLabel: 'Fun', icon: 'PartyPopper', color: 'cat-entertainment', hex: '#FFD400', textOn: 'ink', group: 'discretionary' },
   { id: 'other', label: 'Other', icon: 'Box', color: 'cat-other', hex: '#6B7280', textOn: 'paper', group: 'discretionary' },
 ]
 

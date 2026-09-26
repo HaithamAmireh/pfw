@@ -290,7 +290,7 @@ export function ConfirmDeleteButton({
           type="button"
           aria-label="Cancel delete"
           onClick={() => setConfirming(false)}
-          className="flex h-8 w-8 items-center justify-center rounded border-2 border-ink/30 text-ink/60"
+          className="hit flex h-8 w-8 items-center justify-center rounded border-2 border-ink/30 text-ink/60"
         >
           <X className="h-3.5 w-3.5" strokeWidth={2.5} />
         </button>
@@ -304,7 +304,7 @@ export function ConfirmDeleteButton({
       aria-label={label}
       onClick={() => setConfirming(true)}
       className={cx(
-        'flex h-8 w-8 shrink-0 items-center justify-center rounded border-2 border-ink/30 text-ink/60 hover:border-alert hover:text-alert',
+        'hit flex h-8 w-8 shrink-0 items-center justify-center rounded border-2 border-ink/30 text-ink/60 hover:border-alert hover:text-alert',
         className,
       )}
     >

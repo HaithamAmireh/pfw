@@ -13,6 +13,7 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    scrollbar-gutter: stable;
   }
 
   body {
@@ -55,6 +56,18 @@
 }
 
 @layer utilities {
+  /* Grow a small control's touch area to ~44px without changing its look. */
+  .hit {
+    position: relative;
+  }
+  .hit::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+  }
+  .hit-lg::after {
+    inset: -10px -2px;
+  }
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }

@@ -45,16 +45,19 @@ export interface DayTotal {
   cumulative: number
 }
 
-export function dailyTrend(expenses: Expense[], key: string): DayTotal[] {
+// `throughDay` stops the series at today for the current month, so future
+// days don't show up as a flat line of spending that hasn't happened.
+export function dailyTrend(expenses: Expense[], key: string, throughDay?: number): DayTotal[] {
   const monthly = expensesForMonth(expenses, key)
   const days = daysInMonthKey(key)
+  const lastDay = throughDay ?? days
   const perDay = new Array(days + 1).fill(0)
   for (const e of monthly) {
     perDay[dayOfMonthFromISO(e.date)] += e.amount
   }
   let cumulative = 0
   const out: DayTotal[] = []
-  for (let d = 1; d <= days; d++) {
+  for (let d = 1; d <= lastDay; d++) {
     cumulative += perDay[d]
     out.push({ day: d, date: `${key}-${String(d).padStart(2, '0')}`, total: perDay[d], cumulative })
   }
@@ -68,9 +71,14 @@ export interface MonthComparison {
   deltaPct: number | null // null when previous was 0
 }
 
-export function monthOverMonth(expenses: Expense[], key: string): MonthComparison {
+// When `throughDay` is given (viewing the current month), last month is cut
+// off at the same day so a half-finished month isn't compared to a full one.
+export function monthOverMonth(expenses: Expense[], key: string, throughDay?: number): MonthComparison {
   const current = totalForMonth(expenses, key)
-  const previous = totalForMonth(expenses, shiftMonthKey(key, -1))
+  const prevKey = shiftMonthKey(key, -1)
+  const previous = expensesForMonth(expenses, prevKey)
+    .filter((e) => throughDay === undefined || dayOfMonthFromISO(e.date) <= throughDay)
+    .reduce((sum, e) => sum + e.amount, 0)
   const deltaAmount = current - previous
   const deltaPct = previous === 0 ? null : (deltaAmount / previous) * 100
   return { current, previous, deltaAmount, deltaPct }

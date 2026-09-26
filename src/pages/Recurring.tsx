@@ -36,7 +36,7 @@ export default function Recurring() {
           type="button"
           onClick={() => navigate(-1)}
           aria-label="Back"
-          className="flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+          className="hit flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={3} />
         </button>
@@ -87,9 +87,11 @@ export default function Recurring() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-display font-bold">{r.name}</p>
-                  <p className="text-xs text-ink/50">{cat.label}</p>
+                  <p className="truncate text-xs text-ink/50">
+                    <span className="tnum font-display text-sm font-bold text-ink">{money(r.amount)}</span>
+                    <span className="text-ink/50">/mo · {cat.label}</span>
+                  </p>
                 </div>
-                <span className="tnum shrink-0 font-display font-bold">{money(r.amount)}</span>
 
                 <Switch
                   checked={r.active}
@@ -99,9 +101,9 @@ export default function Recurring() {
 
                 <button
                   type="button"
-                  aria-label="Edit"
+                  aria-label={`Edit ${r.name}`}
                   onClick={() => setFormId(r.id)}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded border-2 border-ink/30 text-ink/60 hover:border-ink hover:text-ink"
+                  className="hit flex h-8 w-8 shrink-0 items-center justify-center rounded border-2 border-ink/30 text-ink/60 hover:border-ink hover:text-ink"
                 >
                   <Pencil className="h-3.5 w-3.5" strokeWidth={2.5} />
                 </button>
@@ -133,7 +135,7 @@ function Switch({
       aria-label={label}
       onClick={onChange}
       className={cx(
-        'flex h-6 w-11 shrink-0 items-center rounded-full border-2 p-0.5 transition-colors',
+        'hit hit-lg flex h-6 w-11 shrink-0 items-center rounded-full border-2 p-0.5 transition-colors',
         checked ? 'justify-end bg-cash' : 'justify-start bg-canvas',
       )}
     >

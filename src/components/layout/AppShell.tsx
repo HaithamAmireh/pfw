@@ -1,5 +1,19 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutGrid, BarChart3, ListOrdered, Settings, Plus, WalletCards, TriangleAlert, X } from 'lucide-react'
+import { useEffect } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import {
+  LayoutGrid,
+  BarChart3,
+  CircleHelp,
+  ListOrdered,
+  Repeat,
+  Settings,
+  ShoppingCart,
+  Plus,
+  Target,
+  WalletCards,
+  TriangleAlert,
+  X,
+} from 'lucide-react'
 import { useWallet } from '@/lib/store'
 import { cx } from '../ui'
 
@@ -11,7 +25,23 @@ const NAV_ITEMS = [
   { to: '/settings', label: 'Settings', icon: Settings, end: false },
 ]
 
+// Desktop has room for the tools that live behind Settings on mobile.
+const TOOL_ITEMS = [
+  { to: '/afford', label: 'Can I afford it?', icon: CircleHelp, end: false },
+  { to: '/budgets', label: 'Budgets & goals', icon: Target, end: false },
+  { to: '/recurring', label: 'Recurring bills', icon: Repeat, end: false },
+  { to: '/shopping', label: 'Shopping list', icon: ShoppingCart, end: false },
+]
+
 export function AppShell() {
+  const { pathname } = useLocation()
+
+  // HashRouter doesn't reset scroll, so a new page would open wherever the
+  // last one was scrolled to.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+
   return (
     <div className="min-h-dvh md:flex">
       <aside className="hidden w-60 shrink-0 border-r-3 border-ink bg-paper md:sticky md:top-0 md:flex md:h-dvh md:flex-col">
@@ -23,6 +53,10 @@ export function AppShell() {
         </div>
         <nav className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
           {NAV_ITEMS.filter((i) => !i.isAction).map((item) => (
+            <SideLink key={item.to} {...item} />
+          ))}
+          <p className="mt-4 px-3 text-xs font-bold uppercase tracking-wide text-ink/40">Tools</p>
+          {TOOL_ITEMS.map((item) => (
             <SideLink key={item.to} {...item} />
           ))}
         </nav>

@@ -15,6 +15,7 @@ export type SpendGroup = 'essential' | 'subscription' | 'discretionary'
 export interface Category {
   id: CategoryId
   label: string
+  shortLabel?: string // used where space is tight, e.g. the 4-column category picker on phones
   icon: string // lucide icon name, resolved in ui/icons.tsx
   color: string // tailwind color token, e.g. 'cat-housing'
   hex: string // resolved hex, used directly in chart fills

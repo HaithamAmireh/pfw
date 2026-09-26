@@ -80,7 +80,7 @@ export default function AddExpense() {
           type="button"
           onClick={() => navigate(-1)}
           aria-label="Close"
-          className="flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+          className="hit flex h-9 w-9 items-center justify-center rounded border-3 bg-paper shadow-brut-sm transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
         >
           <X className="h-4 w-4" strokeWidth={3} />
         </button>

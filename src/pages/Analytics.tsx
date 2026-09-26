@@ -24,7 +24,8 @@ import {
   trailingTrend,
 } from '@/lib/analytics'
 import { getCategory } from '@/lib/categories'
-import { money, moneyCompact, signedPct } from '@/lib/format'
+import { money, moneyAxis, signedPct } from '@/lib/format'
+import { monthKey } from '@/lib/date'
 import { Card, EmptyState, SectionHeading } from '@/components/ui'
 import { MonthSwitcher } from '@/components/MonthSwitcher'
 import { BrutTooltip } from '@/components/ChartTooltip'
@@ -36,7 +37,10 @@ export default function Analytics() {
   const recurring = useWallet((s) => s.recurring)
 
   const breakdown = useMemo(() => categoryBreakdown(expenses, key), [expenses, key])
-  const trend = useMemo(() => dailyTrend(expenses, key), [expenses, key])
+  const trend = useMemo(
+    () => dailyTrend(expenses, key, key === monthKey() ? new Date().getDate() : undefined),
+    [expenses, key],
+  )
   const groups = useMemo(() => groupSplit(expenses, key), [expenses, key])
   const yearly = useMemo(() => trailingTrend(expenses, 12, key), [expenses, key])
   const subChanges = useMemo(() => subscriptionChanges(recurring), [recurring])
@@ -79,7 +83,7 @@ export default function Analytics() {
               <ResponsiveContainer width="100%" height={Math.max(200, barData.length * 44)}>
                 <BarChart data={barData} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="4 4" stroke="#15130F" strokeOpacity={0.12} horizontal={false} />
-                  <XAxis type="number" tickFormatter={moneyCompact} tick={{ fontSize: 11, fontFamily: 'JetBrains Mono', fill: '#15130F' }} axisLine={{ stroke: '#15130F' }} tickLine={false} />
+                  <XAxis type="number" tickCount={4} tickFormatter={moneyAxis} tick={{ fontSize: 11, fontFamily: 'JetBrains Mono', fill: '#15130F' }} axisLine={{ stroke: '#15130F' }} tickLine={false} />
                   <YAxis
                     type="category"
                     dataKey="name"
@@ -103,17 +107,19 @@ export default function Analytics() {
             <SectionHeading title="Daily spending trend" />
             <Card padding="md">
               <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={trend} margin={{ left: -12, right: 12, top: 8, bottom: 0 }}>
+                <LineChart data={trend} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="4 4" stroke="#15130F" strokeOpacity={0.12} />
                   <XAxis
                     dataKey="day"
                     tick={{ fontSize: 11, fontFamily: 'JetBrains Mono', fill: '#15130F' }}
                     axisLine={{ stroke: '#15130F' }}
                     tickLine={false}
-                    interval={Math.ceil(trend.length / 8)}
+                    interval="preserveStartEnd"
+                    minTickGap={16}
                   />
                   <YAxis
-                    tickFormatter={moneyCompact}
+                    width={48}
+                    tickFormatter={moneyAxis}
                     tick={{ fontSize: 11, fontFamily: 'JetBrains Mono', fill: '#15130F' }}
                     axisLine={{ stroke: '#15130F' }}
                     tickLine={false}
@@ -172,10 +178,10 @@ export default function Analytics() {
             <SectionHeading title="Last 12 months" />
             <Card padding="md">
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={yearlyData} margin={{ left: -12, right: 12, top: 8, bottom: 0 }}>
+                <BarChart data={yearlyData} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="4 4" stroke="#15130F" strokeOpacity={0.12} vertical={false} />
                   <XAxis dataKey="name" tick={{ fontSize: 11, fontFamily: 'JetBrains Mono', fill: '#15130F' }} axisLine={{ stroke: '#15130F' }} tickLine={false} />
-                  <YAxis tickFormatter={moneyCompact} tick={{ fontSize: 11, fontFamily: 'JetBrains Mono', fill: '#15130F' }} axisLine={{ stroke: '#15130F' }} tickLine={false} />
+                  <YAxis width={48} tickFormatter={moneyAxis} tick={{ fontSize: 11, fontFamily: 'JetBrains Mono', fill: '#15130F' }} axisLine={{ stroke: '#15130F' }} tickLine={false} />
                   <Tooltip content={<BrutTooltip />} cursor={{ fill: '#15130F', fillOpacity: 0.06 }} />
                   <Bar dataKey="value" name="Spent" fill="#00B86B" stroke="#15130F" strokeWidth={2} radius={0} />
                 </BarChart>

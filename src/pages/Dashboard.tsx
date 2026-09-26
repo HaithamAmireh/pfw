@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowDownRight, ArrowUpRight, ChevronRight, CircleHelp, Flame, PiggyBank, Repeat, ShoppingCart, Trophy } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, ChevronRight, CircleHelp, Flame, PiggyBank, Repeat, ShoppingCart, Target, Trophy } from 'lucide-react'
 import { useWallet } from '@/lib/store'
 import { useMonthParam } from '@/lib/useMonthParam'
 import {
+  affordability,
   biggestCategory,
   biggestExpense,
   categoryBreakdown,
@@ -13,9 +14,10 @@ import {
   totalForMonth,
 } from '@/lib/analytics'
 import { getCategory } from '@/lib/categories'
+import { monthKey } from '@/lib/date'
 import { CategoryIcon } from '@/lib/icons'
 import { money, signedPct } from '@/lib/format'
-import { Badge, Card, EmptyState, ProgressBar, SectionHeading, StatTile } from '@/components/ui'
+import { Card, EmptyState, ProgressBar, SectionHeading, StatTile } from '@/components/ui'
 import { MonthSwitcher } from '@/components/MonthSwitcher'
 
 export default function Dashboard() {
@@ -26,11 +28,24 @@ export default function Dashboard() {
 
   const spent = useMemo(() => totalForMonth(expenses, key), [expenses, key])
   const remaining = income - spent
-  const comparison = useMemo(() => monthOverMonth(expenses, key), [expenses, key])
+  const isCurrentMonth = key === monthKey()
+  const today = new Date().getDate()
+  const comparison = useMemo(
+    () => monthOverMonth(expenses, key, isCurrentMonth ? today : undefined),
+    [expenses, key, isCurrentMonth, today],
+  )
   const breakdown = useMemo(() => categoryBreakdown(expenses, key), [expenses, key])
   const topExpense = useMemo(() => biggestExpense(expenses, key), [expenses, key])
   const topCategory = useMemo(() => biggestCategory(expenses, key), [expenses, key])
-  const rate = useMemo(() => savingsRate(income, expenses, key), [income, expenses, key])
+  const budgets = useWallet((s) => s.settings.budgets)
+  // Mid-month, "income minus spent so far" flatters you — the rest of the
+  // month hasn't been spent yet. For the current month, project to month end.
+  const rate = useMemo(() => {
+    if (!isCurrentMonth) return savingsRate(income, expenses, key)
+    if (income <= 0) return 0
+    const projection = affordability({ price: 0, category: 'other', income, expenses, recurring, budgets, key, today })
+    return (projection.projectedLeftover / income) * 100
+  }, [isCurrentMonth, income, expenses, recurring, budgets, key, today])
   const recurringTotal = useMemo(() => recurringMonthlyTotal(recurring), [recurring])
 
   const spentPct = income > 0 ? Math.min(100, (spent / income) * 100) : 0
@@ -67,7 +82,7 @@ export default function Dashboard() {
                 <ArrowDownRight className="h-4 w-4 text-cash" strokeWidth={3} />
               )}
               <span className="text-sm font-bold">
-                {signedPct(comparison.deltaPct)} vs last month
+                {signedPct(comparison.deltaPct)} vs {isCurrentMonth ? 'this time last month' : 'last month'}
               </span>
             </div>
           )}
@@ -77,8 +92,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 gap-3">
         <Card padding="md">
           <StatTile
-            label="Savings rate"
-            value={`${rate >= 0 ? rate.toFixed(0) : rate.toFixed(0)}%`}
+            label={isCurrentMonth ? 'Projected savings' : 'Savings rate'}
+            value={`${rate.toFixed(0)}%`}
             tone={rate >= 0 ? 'cash' : 'alert'}
             sub={rate >= 20 ? 'Healthy' : rate >= 0 ? 'Tight' : 'Overspent'}
           />
@@ -192,20 +207,19 @@ export default function Dashboard() {
         </Card>
       </Link>
 
-      <div className="flex gap-3">
-        <Link to="/shopping" className="flex-1">
-          <Card padding="md" className="flex items-center justify-between transition-transform active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
-            <span className="flex items-center gap-2 font-display font-bold">
-              <ShoppingCart className="h-4 w-4" strokeWidth={2.5} />
-              Shopping list
-            </span>
-            <Badge>Manage</Badge>
+      <div className="grid grid-cols-2 gap-3">
+        <Link to="/shopping">
+          <Card padding="md" className="flex h-full items-center gap-2 transition-transform active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+            <ShoppingCart className="h-4 w-4 shrink-0" strokeWidth={2.5} />
+            <span className="min-w-0 flex-1 font-display font-bold leading-tight">Shopping list</span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-ink/40" strokeWidth={2.5} />
           </Card>
         </Link>
-        <Link to="/budgets" className="flex-1">
-          <Card padding="md" className="flex items-center justify-between transition-transform active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
-            <span className="font-display font-bold">Budgets &amp; goals</span>
-            <Badge>Manage</Badge>
+        <Link to="/budgets">
+          <Card padding="md" className="flex h-full items-center gap-2 transition-transform active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+            <Target className="h-4 w-4 shrink-0" strokeWidth={2.5} />
+            <span className="min-w-0 flex-1 font-display font-bold leading-tight">Budgets &amp; goals</span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-ink/40" strokeWidth={2.5} />
           </Card>
         </Link>
       </div>
